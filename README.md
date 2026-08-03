@@ -1,0 +1,148 @@
+# Zuvio
+
+Rede social de eventos por compromisso mútuo — o chat só libera quando o
+quórum mínimo de confirmações reais é atingido (não curtida, não
+"interessado"). MVP conforme `zuvio-plano-negocio-e-especificacao.md`.
+
+Este guia parte do zero: nenhuma conta criada ainda em nenhum dos três
+serviços (Supabase, GitHub, Vercel).
+
+---
+
+## Passo 1 — Criar o projeto no Supabase (banco + autenticação)
+
+1. Crie uma conta em [supabase.com](https://supabase.com) (dá para
+   entrar direto com GitHub).
+2. **New Project** → escolha um nome (ex.: `zuvio`), uma senha para o
+   banco (guarde em local seguro — raramente precisa dela depois) e a
+   região mais perto de onde seus usuários estarão.
+3. Espere o projeto provisionar (1-2 minutos).
+4. No menu lateral, abra o **SQL Editor** → **New query**.
+5. Abra o arquivo `supabase/migrations/0001_initial_schema.sql` deste
+   repositório, copie o conteúdo inteiro, cole no editor e clique em
+   **Run**. Isso cria todas as tabelas, as políticas de segurança (RLS)
+   e as funções do backend (confirmação de presença, check-in, etc.).
+   - Se der erro de "relation already exists" (rodou duas vezes sem
+     limpar), rode antes: `drop schema public cascade; create schema public;`
+     — só faça isso se ainda não tiver dados de teste que importam.
+6. Confirme que o e-mail/senha está habilitado como método de login:
+   **Authentication → Providers → Email** deve estar **Enabled**
+   (já vem assim por padrão).
+7. Em **Project Settings → API**, copie dois valores — vai precisar
+   deles no Passo 3:
+   - **Project URL**
+   - **anon public** key (a chave pública, não a `service_role`)
+
+---
+
+## Passo 2 — Subir o projeto para o GitHub
+
+1. Crie uma conta em [github.com](https://github.com), se ainda não tiver.
+2. Crie um repositório novo (**New repository**) — pode ser privado.
+   Não inicialize com README/gitignore (este projeto já tem os dois).
+3. Na pasta do projeto, no terminal:
+   ```bash
+   git init
+   git add .
+   git commit -m "Zuvio MVP"
+   git branch -M main
+   git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+   git push -u origin main
+   ```
+   O arquivo `.env` (com suas chaves) **não vai junto** — está no
+   `.gitignore` de propósito, para as chaves não ficarem expostas
+   publicamente no repositório.
+
+---
+
+## Passo 3 — Publicar na Vercel
+
+1. Crie uma conta em [vercel.com](https://vercel.com) — o mais simples
+   é entrar direto com sua conta do GitHub (facilita a próxima etapa).
+2. **Add New → Project** → selecione o repositório que você acabou de
+   subir.
+3. A Vercel detecta automaticamente que é um projeto Vite — não precisa
+   mudar nada em "Build Command" nem "Output Directory" (`npm run
+   build` e `dist`, respectivamente, já vêm certos).
+4. Antes de clicar em **Deploy**, abra a seção **Environment Variables**
+   e adicione as duas chaves do Passo 1:
+
+   | Key | Value |
+   |---|---|
+   | `VITE_SUPABASE_URL` | a Project URL do Supabase |
+   | `VITE_SUPABASE_ANON_KEY` | a anon public key do Supabase |
+
+   Marque para os três ambientes (Production, Preview, Development).
+5. Clique em **Deploy**. Em 1-2 minutos o app estará no ar num endereço
+   tipo `https://seu-projeto.vercel.app`.
+
+### Se esquecer de adicionar as variáveis antes do deploy
+
+Adicione depois em **Project Settings → Environment Variables**, e então
+force um novo build: **Deployments** → menu "..." do deploy mais
+recente → **Redeploy**. A Vercel só aplica variáveis novas em builds
+futuros, nunca retroativamente.
+
+---
+
+## Passo 4 — Testar
+
+1. Acesse a URL da Vercel, crie uma conta (**Criar conta**).
+2. Se aparecer algum erro de rede ao cadastrar/logar, quase sempre é
+   uma das duas variáveis de ambiente erradas ou faltando — confira
+   com calma se copiou a URL e a chave certas do Supabase (sem espaços
+   nem caracteres a mais na frente).
+3. Crie uma proposta de evento e confira no **Table Editor** do
+   Supabase (tabela `events`) se ela apareceu — é o sinal de que a
+   conexão entre app, Supabase e Vercel está tudo certa.
+
+---
+
+## Desenvolvimento local (opcional, além do deploy)
+
+```bash
+npm install
+cp .env.example .env
+# preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env
+# (as mesmas chaves do Passo 1)
+npm run dev
+```
+
+### Gerar tipos reais do banco (recomendado depois que o projeto existir)
+
+O arquivo `src/infrastructure/supabase/database.types.ts` foi escrito à
+mão, espelhando a migração SQL. Para ter os tipos exatos do seu projeto:
+
+```bash
+npx supabase gen types typescript --project-id SEU_PROJECT_ID > src/infrastructure/supabase/database.types.ts
+```
+
+(O `SEU_PROJECT_ID` aparece na URL do painel do Supabase ou em
+**Project Settings → General**.)
+
+### Build de produção local
+
+```bash
+npm run build
+```
+
+Gera `dist/` com o service worker, manifest e ícones do PWA já
+configurados — é exatamente o que a Vercel roda automaticamente a cada
+push.
+
+---
+
+## Arquitetura
+
+Veja [`ARCHITECTURE.md`](./ARCHITECTURE.md) para a organização em
+camadas, as decisões de design e o que está implementado vs. planejado
+para as próximas fases.
+
+## Stack
+
+- React 18 + Vite + TypeScript
+- Tailwind CSS v4 (config CSS-first, ver `src/index.css`)
+- Supabase (Postgres + Auth + Realtime + RLS) — sem backend customizado
+- React Router + TanStack Query
+- PWA via `vite-plugin-pwa`
+- Deploy: Vercel

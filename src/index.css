@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/*
+ * Zuvio — sistema de design.
+ *
+ * Paleta deliberadamente diferente dos clichês de "gerado por IA"
+ * (bege+terracota; preto+verde-ácido; hairlines de jornal): base
+ * azul-noturno frio (confiança) + acento coral quente (energia social)
+ * + uma cor exclusiva reservada SÓ para o momento de "quórum atingido/
+ * chat liberado" — nunca usada em mais nada na interface, para que
+ * sempre sinalize exatamente esse momento (ver seção 14.2 do briefing).
+ */
+@theme {
+  --font-display: "Space Grotesk", "Manrope", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Base — azul-noturno, frio, transmite confiança/seriedade. */
+  --color-ink-950: #0B0E1A;
+  --color-ink-900: #12172B;
+  --color-ink-800: #1C2340;
+  --color-ink-700: #2A3358;
+  --color-ink-600: #3D4770;
+  --color-ink-500: #5A6491;
+  --color-ink-400: #8A93B8;
+  --color-ink-300: #B7BEDA;
+  --color-ink-200: #DCE0F0;
+  --color-ink-100: #EFF1FA;
+
+  /* Acento primário — coral quente, energia social, CTAs. */
+  --color-coral-600: #E14F30;
+  --color-coral-500: #FF6B4A;
+  --color-coral-400: #FF8C6E;
+  --color-coral-300: #FFB39D;
+
+  /* Cor de assinatura — reservada exclusivamente para "quórum
+     atingido" / "chat liberado". Não usar em mais nada na UI. */
+  --color-quorum-600: #00A88C;
+  --color-quorum-500: #12E0B2;
+  --color-quorum-400: #5CF0CE;
+
+  /* Apoio */
+  --color-amber-500: #F0A93A;
+  --color-danger-500: #F3564B;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-ink-900);
+  color: var(--color-ink-100);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+
+/* Respeita preferência de redução de movimento (seção 14.6). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Safe-area para iOS PWA (notch/status bar e home indicator). */
+header {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+.app-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
