@@ -24,6 +24,17 @@ export const isOfMinimumAge = (dataNascimentoISO: string, todayISO: string): boo
   calculateAge(dataNascimentoISO, todayISO) >= MINIMUM_AGE;
 
 /**
+ * Um perfil vindo de login com Google pode nascer sem data de
+ * nascimento nem localização (o Google não fornece isso) — a
+ * aplicação usa esta checagem para decidir se leva a pessoa para a
+ * tela de completar perfil antes de liberar o resto do app.
+ */
+export const isProfileComplete = (profile: {
+  dataNascimento: string | null;
+  localizacaoBase: string | null;
+}): boolean => Boolean(profile.dataNascimento && profile.localizacaoBase);
+
+/**
  * Domínio: Validação de check-in geolocalizado.
  *
  * Distância em metros pela fórmula de Haversine — sem dependência de

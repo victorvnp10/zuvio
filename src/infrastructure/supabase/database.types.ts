@@ -27,9 +27,9 @@ export interface Database {
           id: string;
           nome: string;
           foto_url: string | null;
-          data_nascimento: string;
+          data_nascimento: string | null;
           genero: string | null;
-          localizacao_base: string;
+          localizacao_base: string | null;
           categorias_interesse: EventCategoryRow[];
           score_confiabilidade: number;
           selo: TrustBadgeRow;
@@ -62,16 +62,20 @@ export interface Database {
           quorum_minimo: number;
           status: EventStatusRow;
           criado_em: string;
+          tipo_evento: "livre" | "pago" | "colaborativo";
+          valor_entrada: number | null;
+          link_pagamento: string | null;
+          modo_lista_colaborativa: "predefinida" | "livre" | "mista" | null;
+          modo_custo_colaborativo: "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes" | null;
+          valor_por_pessoa: number | null;
+          valor_total_rateio: number | null;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],
           "id" | "vagas_confirmadas" | "status" | "criado_em"
         >;
         Update: Partial<
-          Pick<
-            Database["public"]["Tables"]["events"]["Row"],
-            "titulo" | "descricao" | "endereco" | "geo_lat" | "geo_lng" | "data_hora"
-          >
+          Omit<Database["public"]["Tables"]["events"]["Row"], "id" | "criado_em" | "criador_id">
         >;
       };
       commitments: {
@@ -82,6 +86,23 @@ export interface Database {
           status: CommitmentStatusRow;
           confirmado_em: string;
           checkin_em: string | null;
+          pagamento_confirmado: boolean;
+          google_calendar_event_id: string | null;
+        };
+      };
+      collaborative_items: {
+        Row: {
+          id: string;
+          event_id: string;
+          nome: string;
+          criado_por: string;
+          reservado_por: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          nome: string;
+          criado_por: string;
         };
       };
       chat_messages: {
@@ -219,6 +240,10 @@ export interface Database {
       redeem_invite: {
         Args: { p_codigo: string };
         Returns: string;
+      };
+      confirm_payment: {
+        Args: { p_event_id: string };
+        Returns: void;
       };
     };
   };

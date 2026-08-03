@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { EventsRepository, type CreateEventInput } from "../../infrastructure/supabase/repositories/EventsRepository";
 import { isValidQuorum } from "../../domain/services/QuorumService";
+import { validateEventType } from "../../domain/services/EventTypeService";
 import { useAuth } from "../context/AuthContext";
 import type { EventProposal } from "../../domain/entities/types";
 
@@ -20,6 +21,12 @@ export function useCreateEvent() {
 
       if (!isValidQuorum(input.quorumMinimo, input.vagasTotal)) {
         setError("O quórum mínimo não pode ser maior que o total de vagas.");
+        return null;
+      }
+
+      const eventTypeError = validateEventType(input);
+      if (eventTypeError) {
+        setError(eventTypeError);
         return null;
       }
 

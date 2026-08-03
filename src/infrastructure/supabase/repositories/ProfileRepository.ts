@@ -29,18 +29,22 @@ export const ProfileRepository = {
 
   async update(
     userId: string,
-    changes: Partial<Pick<Profile, "nome" | "fotoUrl" | "genero" | "localizacaoBase" | "categoriasInteresse">>
+    changes: Partial<
+      Pick<
+        Profile,
+        "nome" | "fotoUrl" | "genero" | "localizacaoBase" | "categoriasInteresse" | "dataNascimento"
+      >
+    >
   ): Promise<void> {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        nome: changes.nome,
-        foto_url: changes.fotoUrl,
-        genero: changes.genero,
-        localizacao_base: changes.localizacaoBase,
-        categorias_interesse: changes.categoriasInteresse,
-      })
-      .eq("id", userId);
+    const patch: Record<string, unknown> = {};
+    if (changes.nome !== undefined) patch.nome = changes.nome;
+    if (changes.fotoUrl !== undefined) patch.foto_url = changes.fotoUrl;
+    if (changes.genero !== undefined) patch.genero = changes.genero;
+    if (changes.localizacaoBase !== undefined) patch.localizacao_base = changes.localizacaoBase;
+    if (changes.categoriasInteresse !== undefined) patch.categorias_interesse = changes.categoriasInteresse;
+    if (changes.dataNascimento !== undefined) patch.data_nascimento = changes.dataNascimento;
+
+    const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
     if (error) throw new Error(error.message);
   },
 };

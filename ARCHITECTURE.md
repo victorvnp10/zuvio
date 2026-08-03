@@ -211,3 +211,60 @@ Ainda não implementado nesta rodada: na criação de um evento Amigos/
 Híbrida, escolher uma ou mais listas (ou amigos individuais) para
 convidar diretamente, com o convite aparecendo na Central de
 Notificações do destinatário (sem push real ainda — isso é Fase 5).
+
+## Login com Google + Google Calendar
+
+### Por que existe uma Edge Function
+
+O access_token do Google expira em ~1h. Renová-lo exige o Client
+Secret do Google — um segredo que nunca pode existir no código do
+cliente. Por isso toda a lógica de renovação de token e chamada à
+Google Calendar API vive em `supabase/functions/sync-google-calendar/`,
+rodando com a `service_role` key (que ignora RLS) — é o único lugar
+com acesso de leitura/escrita em `google_tokens`, tabela que
+propositalmente não tem NENHUMA policy de RLS para `anon`/
+`authenticated`.
+
+### Fluxo
+
+1. `AuthContext.signInWithGoogle()` pede o escopo
+   `calendar.events` (além do login em si), com
+   `access_type=offline` + `prompt=consent` — sem isso, o Google não
+   devolve um `refresh_token`, e depois de ~1h a sincronização para de
+   funcionar sem forma de renovar.
+2. Logo após o login, a sessão do Supabase traz `provider_token`/
+   `provider_refresh_token` uma única vez — `AuthContext` captura isso
+   no evento `SIGNED_IN` e chama a Edge Function (`action: "store_tokens"`)
+   para guardar com segurança.
+3. Ao confirmar presença (`useEventDetail.handleCommit`), o app chama
+   a Edge Function (`action: "sync_event"`) — ela renova o token se
+   necessário e cria/atualiza o evento na Agenda da pessoa. É
+   best-effort: uma falha aqui nunca impede a confirmação de presença
+   em si.
+4. Ao cancelar, a Edge Function remove o evento correspondente da
+   Agenda (`action: "remove_event"`).
+
+### Cadastro com Google e o gate de perfil incompleto
+
+Login com Google não fornece data de nascimento nem localização — os
+dois passaram a ser colunas opcionais (migração 0008). `RequireAuth`
+(em `App.tsx`) verifica `isProfileComplete(profile)` e redireciona
+para `/completar-perfil` quando faltam esses dados, antes de liberar
+qualquer outra tela. A verificação de idade mínima continua sendo
+feita (só não pode mais ser um NOT NULL de coluna).
+
+## Tipos de evento: Livre, Pago, Colaborativo
+
+- **Livre** (padrão): sem nenhum dado extra — check-in e comprovante
+  apresentados na entrada, fora do app.
+- **Pago**: `valor_entrada` + `link_pagamento` — o app só guarda e
+  mostra o link, nunca processa pagamento. Quem confirma presença pode
+  se autodeclarar "já paguei" (`commitments.pagamento_confirmado`,
+  alterado só via a função `confirm_payment` — `commitments` não tem
+  UPDATE direto para o cliente em nenhum campo).
+- **Colaborativo**: lista de itens (`collaborative_items`) — o modo
+  (`predefinida`/`livre`/`mista`) decide se só o organizador pode
+  adicionar itens ou se qualquer participante confirmado também pode.
+  Tem também um custo opcional: valor fixo por pessoa, ou rateado pelo
+  total de quem fez check-in de verdade (`computeRateioPerPerson` no
+  domínio) — nunca por quem só confirmou e não apareceu.

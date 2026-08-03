@@ -1,6 +1,7 @@
 import type { Database } from "./database.types";
 import type {
   ChatMessage,
+  CollaborativeItem,
   Commitment,
   EventProposal,
   Friendship,
@@ -17,16 +18,18 @@ type ChatMessageRow = Database["public"]["Tables"]["chat_messages"]["Row"];
 type RatingRow = Database["public"]["Tables"]["ratings"]["Row"];
 type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
 type FriendGroupRow = Database["public"]["Tables"]["friend_groups"]["Row"];
+type CollaborativeItemRow = Database["public"]["Tables"]["collaborative_items"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
   nome: row.nome,
   fotoUrl: row.foto_url,
-  // `public_profiles` não tem data_nascimento — undefined vira "" aqui
-  // porque esta função só deve ser chamada para o PRÓPRIO perfil
-  // quando a idade importa; em qualquer outro contexto, use os campos
-  // públicos diretamente (nunca confie neste valor vindo da view).
-  dataNascimento: "data_nascimento" in row ? row.data_nascimento : "",
+  // `public_profiles` não tem data_nascimento — undefined vira null
+  // aqui porque esta função só deve ser chamada com o valor real
+  // quando é o PRÓPRIO perfil da pessoa; em qualquer outro contexto,
+  // use os campos públicos diretamente (nunca confie neste valor vindo
+  // da view pública).
+  dataNascimento: "data_nascimento" in row ? row.data_nascimento : null,
   genero: row.genero,
   localizacaoBase: row.localizacao_base,
   categoriasInteresse: row.categorias_interesse,
@@ -52,6 +55,13 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   quorumMinimo: row.quorum_minimo,
   status: row.status,
   criadoEm: row.criado_em,
+  tipoEvento: row.tipo_evento,
+  valorEntrada: row.valor_entrada,
+  linkPagamento: row.link_pagamento,
+  modoListaColaborativa: row.modo_lista_colaborativa,
+  modoCustoColaborativo: row.modo_custo_colaborativo,
+  valorPorPessoa: row.valor_por_pessoa,
+  valorTotalRateio: row.valor_total_rateio,
 });
 
 export const toCommitment = (row: CommitmentRow): Commitment => ({
@@ -61,6 +71,8 @@ export const toCommitment = (row: CommitmentRow): Commitment => ({
   status: row.status,
   confirmadoEm: row.confirmado_em,
   checkinEm: row.checkin_em,
+  pagamentoConfirmado: row.pagamento_confirmado,
+  googleCalendarEventId: row.google_calendar_event_id,
 });
 
 export const toChatMessage = (row: ChatMessageRow): ChatMessage => ({
@@ -94,5 +106,14 @@ export const toFriendGroup = (row: FriendGroupRow): FriendGroup => ({
   ownerId: row.owner_id,
   nome: row.nome,
   isSystem: row.is_system,
+  criadoEm: row.criado_em,
+});
+
+export const toCollaborativeItem = (row: CollaborativeItemRow): CollaborativeItem => ({
+  id: row.id,
+  eventId: row.event_id,
+  nome: row.nome,
+  criadoPor: row.criado_por,
+  reservadoPor: row.reservado_por,
   criadoEm: row.criado_em,
 });

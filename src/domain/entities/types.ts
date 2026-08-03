@@ -51,16 +51,23 @@ export interface Profile {
   id: string;
   nome: string;
   fotoUrl: string | null;
-  /** Nunca exibida publicamente — só para verificação de idade mínima e segmentação. */
-  dataNascimento: string;
+  /** Nunca exibida publicamente — só para verificação de idade mínima e segmentação.
+   * `null` = perfil incompleto (comum logo após login com Google) — a
+   * aplicação deve levar a pessoa para completar antes de liberar o
+   * resto do app. */
+  dataNascimento: string | null;
   /** Campo opcional — nunca usado para restringir acesso, só segmentação. */
   genero: string | null;
-  localizacaoBase: string;
+  localizacaoBase: string | null;
   categoriasInteresse: EventCategory[];
   scoreConfiabilidade: number;
   selo: TrustBadge;
   criadoEm: string;
 }
+
+export type TipoEvento = "livre" | "pago" | "colaborativo";
+export type ModoListaColaborativa = "predefinida" | "livre" | "mista";
+export type ModoCustoColaborativo = "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes";
 
 export interface EventProposal {
   id: string;
@@ -80,6 +87,29 @@ export interface EventProposal {
   quorumMinimo: number;
   status: EventStatus;
   criadoEm: string;
+
+  tipoEvento: TipoEvento;
+
+  // tipoEvento === "pago"
+  valorEntrada: number | null;
+  linkPagamento: string | null;
+
+  // tipoEvento === "colaborativo"
+  modoListaColaborativa: ModoListaColaborativa | null;
+  modoCustoColaborativo: ModoCustoColaborativo | null;
+  valorPorPessoa: number | null;
+  valorTotalRateio: number | null;
+}
+
+/** Item da lista colaborativa ("o que levar"). */
+export interface CollaborativeItem {
+  id: string;
+  eventId: string;
+  nome: string;
+  criadoPor: string;
+  /** null = ninguém marcou ainda que vai levar este item. */
+  reservadoPor: string | null;
+  criadoEm: string;
 }
 
 export interface Commitment {
@@ -89,6 +119,8 @@ export interface Commitment {
   status: CommitmentStatus;
   confirmadoEm: string;
   checkinEm: string | null;
+  pagamentoConfirmado: boolean;
+  googleCalendarEventId: string | null;
 }
 
 export interface ChatMessage {

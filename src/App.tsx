@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./application/context/AuthContext";
 import { AuthScreen } from "./presentation/screens/AuthScreen";
+import { CompleteProfileScreen } from "./presentation/screens/CompleteProfileScreen";
 import { DiscoveryFeedScreen } from "./presentation/screens/DiscoveryFeedScreen";
 import { EventDetailScreen } from "./presentation/screens/EventDetailScreen";
 import { EditEventScreen } from "./presentation/screens/EditEventScreen";
@@ -8,9 +9,11 @@ import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
 import { FriendsScreen } from "./presentation/screens/FriendsScreen";
+import { isProfileComplete } from "./domain/valueObjects/Eligibility";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -21,6 +24,18 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return <Navigate to="/entrar" replace />;
+
+  // Login com Google não fornece data de nascimento/localização — sem
+  // isso, a pessoa é levada a completar o perfil antes de ver o resto
+  // do app (a verificação de idade mínima continua obrigatória).
+  if (
+    profile &&
+    !isProfileComplete(profile) &&
+    location.pathname !== "/completar-perfil"
+  ) {
+    return <Navigate to="/completar-perfil" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -29,6 +44,14 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/entrar" element={<AuthScreen />} />
+        <Route
+          path="/completar-perfil"
+          element={
+            <RequireAuth>
+              <CompleteProfileScreen />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/"
           element={

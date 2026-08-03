@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EventsRepository } from "../../infrastructure/supabase/repositories/EventsRepository";
 import { CommitmentsRepository } from "../../infrastructure/supabase/repositories/CommitmentsRepository";
+import { GoogleCalendarRepository } from "../../infrastructure/supabase/repositories/GoogleCalendarRepository";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import {
   evaluateCheckinEligibility,
@@ -44,6 +45,10 @@ export function useEventDetail(eventId: string | undefined) {
   const myCommitment = commitmentsQuery.data?.find((c) => c.userId === user?.id) ?? null;
   const quorum = eventQuery.data ? summarizeQuorum(eventQuery.data) : null;
 
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["event-commitments", eventId] });
+  }, [eventId, queryClient]);
+
   const runAction = useCallback(
     async (action: () => Promise<void>) => {
       setActionError(null);
@@ -66,16 +71,29 @@ export function useEventDetail(eventId: string | undefined) {
   const handleCommit = useCallback(() => {
     if (!eventId) return;
     return runAction(async () => {
-      await CommitmentsRepository.commit(eventId);
+      const commitment = await CommitmentsRepository.commit(eventId);
+      // Sincronização com a Agenda do Google é "melhor esforço": se a
+      // pessoa não conectou o Google, ou o token não tem mais
+      // permissão, isso não deve impedir a confirmação de presença em
+      // si — só registra o erro no console.
+      GoogleCalendarRepository.syncEvent(commitment.id).catch((err) => {
+        console.error("Não foi possível sincronizar com o Google Calendar:", err);
+      });
     });
   }, [eventId, runAction]);
 
   const handleCancel = useCallback(() => {
     if (!eventId) return;
     return runAction(async () => {
+      const commitmentId = myCommitment?.id;
       await CommitmentsRepository.cancel(eventId);
+      if (commitmentId) {
+        GoogleCalendarRepository.removeEvent(commitmentId).catch((err) => {
+          console.error("Não foi possível remover o evento do Google Calendar:", err);
+        });
+      }
     });
-  }, [eventId, runAction]);
+  }, [eventId, runAction, myCommitment?.id]);
 
   const handleCheckin = useCallback(() => {
     if (!eventId || !eventQuery.data?.local.geo) return;
@@ -126,5 +144,6 @@ export function useEventDetail(eventId: string | undefined) {
     handleCommit,
     handleCancel,
     handleCheckin,
+    refetch,
   };
 }

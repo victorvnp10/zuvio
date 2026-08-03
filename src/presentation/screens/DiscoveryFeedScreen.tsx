@@ -71,8 +71,13 @@ export function DiscoveryFeedScreen() {
             >
               <div className={`relative h-32 bg-gradient-to-br ${cover.gradient} flex items-center justify-center`}>
                 <span className="text-5xl opacity-90">{cover.emoji}</span>
-                <div className="absolute top-3 left-3">
+                <div className="absolute top-3 left-3 flex gap-1.5">
                   <CategoryBadge categoria={event.categoria} />
+                  {event.tipoEvento !== "livre" && (
+                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-ink-900/80 text-amber-500 border border-amber-500/30">
+                      {event.tipoEvento === "pago" ? "💰 Pago" : "🍲 Colaborativo"}
+                    </span>
+                  )}
                 </div>
                 <div className="absolute -bottom-5 right-4 bg-ink-800 rounded-full p-1 shadow-lg">
                   <QuorumMeter quorum={quorum} size={48} />

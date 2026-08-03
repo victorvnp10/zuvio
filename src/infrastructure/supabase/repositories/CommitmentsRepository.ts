@@ -46,4 +46,10 @@ export const CommitmentsRepository = {
     if (error) throw new Error(error.message);
     return toCommitment(data);
   },
+
+  /** Autoconfirmação (evento tipo "pago") de que a pessoa já usou o link de pagamento. */
+  async confirmPayment(eventId: string): Promise<void> {
+    const { error } = await supabase.rpc("confirm_payment", { p_event_id: eventId });
+    if (error) throw new Error(error.message);
+  },
 };

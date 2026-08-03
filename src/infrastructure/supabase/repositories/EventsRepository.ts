@@ -1,6 +1,12 @@
 import { supabase } from "../client";
 import { toEventProposal } from "../mappers";
-import type { EventCategory, EventProposal } from "../../../domain/entities/types";
+import type {
+  EventCategory,
+  EventProposal,
+  ModoCustoColaborativo,
+  ModoListaColaborativa,
+  TipoEvento,
+} from "../../../domain/entities/types";
 
 export interface CreateEventInput {
   criadorId: string;
@@ -13,6 +19,13 @@ export interface CreateEventInput {
   modalidade: EventProposal["modalidade"];
   vagasTotal: number;
   quorumMinimo: number;
+  tipoEvento: TipoEvento;
+  valorEntrada?: number | null;
+  linkPagamento?: string | null;
+  modoListaColaborativa?: ModoListaColaborativa | null;
+  modoCustoColaborativo?: ModoCustoColaborativo | null;
+  valorPorPessoa?: number | null;
+  valorTotalRateio?: number | null;
 }
 
 export interface UpdateEventInput {
@@ -25,6 +38,13 @@ export interface UpdateEventInput {
   modalidade?: EventProposal["modalidade"];
   vagasTotal?: number;
   quorumMinimo?: number;
+  tipoEvento?: TipoEvento;
+  valorEntrada?: number | null;
+  linkPagamento?: string | null;
+  modoListaColaborativa?: ModoListaColaborativa | null;
+  modoCustoColaborativo?: ModoCustoColaborativo | null;
+  valorPorPessoa?: number | null;
+  valorTotalRateio?: number | null;
 }
 
 export const EventsRepository = {
@@ -79,6 +99,13 @@ export const EventsRepository = {
         modalidade: input.modalidade,
         vagas_total: input.vagasTotal,
         quorum_minimo: input.quorumMinimo,
+        tipo_evento: input.tipoEvento,
+        valor_entrada: input.valorEntrada ?? null,
+        link_pagamento: input.linkPagamento ?? null,
+        modo_lista_colaborativa: input.modoListaColaborativa ?? null,
+        modo_custo_colaborativo: input.modoCustoColaborativo ?? null,
+        valor_por_pessoa: input.valorPorPessoa ?? null,
+        valor_total_rateio: input.valorTotalRateio ?? null,
       })
       .select("*")
       .single();
@@ -105,6 +132,15 @@ export const EventsRepository = {
     if (changes.modalidade !== undefined) patch.modalidade = changes.modalidade;
     if (changes.vagasTotal !== undefined) patch.vagas_total = changes.vagasTotal;
     if (changes.quorumMinimo !== undefined) patch.quorum_minimo = changes.quorumMinimo;
+    if (changes.tipoEvento !== undefined) patch.tipo_evento = changes.tipoEvento;
+    if (changes.valorEntrada !== undefined) patch.valor_entrada = changes.valorEntrada;
+    if (changes.linkPagamento !== undefined) patch.link_pagamento = changes.linkPagamento;
+    if (changes.modoListaColaborativa !== undefined)
+      patch.modo_lista_colaborativa = changes.modoListaColaborativa;
+    if (changes.modoCustoColaborativo !== undefined)
+      patch.modo_custo_colaborativo = changes.modoCustoColaborativo;
+    if (changes.valorPorPessoa !== undefined) patch.valor_por_pessoa = changes.valorPorPessoa;
+    if (changes.valorTotalRateio !== undefined) patch.valor_total_rateio = changes.valorTotalRateio;
     if (changes.geo !== undefined) {
       patch.geo_lat = changes.geo?.lat ?? null;
       patch.geo_lng = changes.geo?.lng ?? null;

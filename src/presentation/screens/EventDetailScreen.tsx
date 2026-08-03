@@ -9,6 +9,8 @@ import { CategoryBadge } from "../components/CategoryBadge";
 import { ChatPanel } from "../components/ChatPanel";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
+import { EventCostSection } from "../components/EventCostSection";
+import { CollaborativeListSection } from "../components/CollaborativeListSection";
 import { isChatUnlocked } from "../../domain/services/QuorumService";
 
 export function EventDetailScreen() {
@@ -26,6 +28,7 @@ export function EventDetailScreen() {
     handleCommit,
     handleCancel,
     handleCheckin,
+    refetch,
   } = useEventDetail(eventId);
 
   if (isLoading || !event || !quorum || !user) {
@@ -146,6 +149,25 @@ export function EventDetailScreen() {
 
         {isConcluded && alreadyCheckedIn && (
           <RatingSection eventId={event.id} commitments={commitments} currentUserId={user.id} />
+        )}
+
+        {!isCancelled && event.tipoEvento !== "livre" && eventId && (
+          <EventCostSection
+            event={event}
+            eventId={eventId}
+            myCommitment={myCommitment}
+            commitments={commitments}
+            onPaymentConfirmed={refetch}
+          />
+        )}
+
+        {!isCancelled && event.tipoEvento === "colaborativo" && eventId && (isCreator || isCommitted) && (
+          <CollaborativeListSection
+            eventId={eventId}
+            modoLista={event.modoListaColaborativa}
+            currentUserId={user.id}
+            isCreator={isCreator}
+          />
         )}
 
         {chatUnlocked && isCommitted && eventId && <ChatPanel eventId={eventId} />}
