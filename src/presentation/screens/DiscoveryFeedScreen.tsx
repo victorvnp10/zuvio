@@ -69,8 +69,17 @@ export function DiscoveryFeedScreen() {
               onClick={() => navigate(`/eventos/${event.id}`)}
               className="w-full text-left bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden hover:border-coral-500/40 transition-colors"
             >
-              <div className={`relative h-32 bg-gradient-to-br ${cover.gradient} flex items-center justify-center`}>
-                <span className="text-5xl opacity-90">{cover.emoji}</span>
+              <div
+                className={`relative h-32 flex items-center justify-center ${
+                  event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
+                }`}
+                style={
+                  event.capaUrl
+                    ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                    : undefined
+                }
+              >
+                {!event.capaUrl && <span className="text-5xl opacity-90">{cover.emoji}</span>}
                 <div className="absolute top-3 left-3 flex gap-1.5">
                   <CategoryBadge categoria={event.categoria} />
                   {event.tipoEvento !== "livre" && (

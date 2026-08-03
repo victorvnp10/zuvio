@@ -90,6 +90,9 @@ export interface EventProposal {
 
   tipoEvento: TipoEvento;
 
+  /** null = usa o gradiente por categoria como capa (ver CATEGORY_COVER). */
+  capaUrl: string | null;
+
   // tipoEvento === "pago"
   valorEntrada: number | null;
   linkPagamento: string | null;
@@ -109,6 +112,18 @@ export interface CollaborativeItem {
   criadoPor: string;
   /** null = ninguém marcou ainda que vai levar este item. */
   reservadoPor: string | null;
+  criadoEm: string;
+}
+
+export type FotoVisibilidade = "evento" | "publica";
+
+/** Foto postada por um participante (ou organizador) de um evento. */
+export interface EventPhoto {
+  id: string;
+  eventId: string;
+  autorId: string;
+  fotoUrl: string;
+  visibilidade: FotoVisibilidade;
   criadoEm: string;
 }
 

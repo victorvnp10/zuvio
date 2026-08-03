@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
+import { useEventCover } from "../../application/hooks/useEventCover";
 import { CATEGORY_OPTIONS } from "../components/CategoryBadge";
 import { isValidQuorum, canReduceVagasTo } from "../../domain/services/QuorumService";
 import { validateEventType } from "../../domain/services/EventTypeService";
@@ -50,6 +51,9 @@ export function EditEventScreen() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { event, quorum, isLoading } = useEventDetail(eventId);
+  const { uploadCover, isUploading: isUploadingCover, error: coverError } = useEventCover(
+    eventId ?? ""
+  );
   const { updateEvent, isSubmitting, error } = useManageMyEvent();
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -162,6 +166,38 @@ export function EditEventScreen() {
 
       <main className="max-w-lg mx-auto p-4">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-ink-400 mb-2">Capa do evento</label>
+            <div
+              className="relative h-32 rounded-xl overflow-hidden bg-ink-800 border border-ink-700 flex items-center justify-center"
+              style={
+                event.capaUrl
+                  ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                  : undefined
+              }
+            >
+              {!event.capaUrl && (
+                <span className="text-sm text-ink-500">Sem capa — usando o padrão da categoria</span>
+              )}
+              <label className="absolute inset-0 flex items-center justify-center bg-ink-950/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                <span className="text-sm font-semibold text-white">
+                  {isUploadingCover ? "Enviando..." : "Trocar capa"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isUploadingCover}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadCover(file);
+                  }}
+                />
+              </label>
+            </div>
+            {coverError && <p className="text-xs text-red-400 mt-1">{coverError}</p>}
+          </div>
+
           <div>
             <label className="block text-sm text-ink-400 mb-2">Categoria</label>
             <div className="grid grid-cols-2 gap-2">

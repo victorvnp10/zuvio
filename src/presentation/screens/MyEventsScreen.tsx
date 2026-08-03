@@ -32,8 +32,17 @@ function EventCard({
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden">
       <button onClick={onOpen} className="w-full text-left">
-        <div className={`relative h-24 bg-gradient-to-br ${cover.gradient} flex items-center justify-center ${isCancelled ? "grayscale opacity-60" : ""}`}>
-          <span className="text-3xl opacity-90">{cover.emoji}</span>
+        <div
+          className={`relative h-24 flex items-center justify-center ${isCancelled ? "grayscale opacity-60" : ""} ${
+            event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
+          }`}
+          style={
+            event.capaUrl
+              ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : undefined
+          }
+        >
+          {!event.capaUrl && <span className="text-3xl opacity-90">{cover.emoji}</span>}
           <div className="absolute top-2 left-2">
             <CategoryBadge categoria={event.categoria} />
           </div>

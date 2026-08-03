@@ -11,6 +11,8 @@ import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
 import { CollaborativeListSection } from "../components/CollaborativeListSection";
+import { EventPhotosSection } from "../components/EventPhotosSection";
+import { CATEGORY_COVER } from "../components/CategoryBadge";
 import { BottomNav } from "../layout/BottomNav";
 import { isChatUnlocked } from "../../domain/services/QuorumService";
 
@@ -75,6 +77,21 @@ export function EventDetailScreen() {
             </p>
           </div>
         )}
+
+        <div
+          className={`h-40 rounded-2xl flex items-center justify-center overflow-hidden ${
+            event.capaUrl ? "" : `bg-gradient-to-br ${CATEGORY_COVER[event.categoria].gradient}`
+          }`}
+          style={
+            event.capaUrl
+              ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : undefined
+          }
+        >
+          {!event.capaUrl && (
+            <span className="text-6xl opacity-90">{CATEGORY_COVER[event.categoria].emoji}</span>
+          )}
+        </div>
 
         <div className="bg-ink-800/60 border border-ink-700 rounded-2xl p-5 space-y-4">
           <div className="flex items-start justify-between gap-4">
@@ -169,6 +186,10 @@ export function EventDetailScreen() {
             currentUserId={user.id}
             isCreator={isCreator}
           />
+        )}
+
+        {!isCancelled && eventId && (isCommitted || isCreator) && (
+          <EventPhotosSection eventId={eventId} currentUserId={user.id} isCreator={isCreator} />
         )}
 
         {chatUnlocked && (isCommitted || isCreator) && eventId && <ChatPanel eventId={eventId} />}

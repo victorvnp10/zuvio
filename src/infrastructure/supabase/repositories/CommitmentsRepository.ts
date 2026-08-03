@@ -26,6 +26,19 @@ export const CommitmentsRepository = {
     return (data ?? []).map(toCommitment);
   },
 
+  /** Usado para descobrir quais amigos já confirmaram presença num conjunto de eventos (ranking do feed). */
+  async listForEventsAndUsers(eventIds: string[], userIds: string[]): Promise<Commitment[]> {
+    if (eventIds.length === 0 || userIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from("commitments")
+      .select("*")
+      .in("event_id", eventIds)
+      .in("user_id", userIds)
+      .neq("status", "cancelado");
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toCommitment);
+  },
+
   async commit(eventId: string): Promise<Commitment> {
     const { data, error } = await supabase.rpc("commit_to_event", { p_event_id: eventId });
     if (error) throw new Error(error.message);

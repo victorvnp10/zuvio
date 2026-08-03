@@ -305,3 +305,37 @@ o quórum ser atingido. Corrigido usando `is_event_creator` como
 condição alternativa (ver migração 0012), e a tela agora mostra o
 `ChatPanel` também quando `isCreator` é verdadeiro, não só quando há
 compromisso confirmado.
+
+## Feed ordenado por proximidade social, capa editável, fotos de participantes
+
+### Ordenação do feed
+
+`useDiscoveryFeed` agora busca também as amizades do usuário e quais
+amigos já confirmaram presença nos eventos retornados, e ordena por
+`domain/services/FeedRankingService.ts`: criador amigo (3) > algum
+participante é amigo (2) > sem conexão (1), com empate desfeito por
+data. A privacidade continua 100% decidida antes disso, na RLS —
+isto só reordena o que a pessoa já tinha permissão de ver.
+
+### Privacidade real para eventos "Amigos" (correção)
+
+Antes, a modalidade "Amigos" aparecia igual a "Aberta a estranhos" no
+feed público — não fazia sentido para uma modalidade que existe
+justamente para ser vista só pelos amigos do organizador. Corrigido na
+política de RLS de `events` usando `are_friends()` (ver migração 0013).
+
+### Capa do evento
+
+`events.capa_url`, editável em qualquer momento pelo organizador (tela
+de edição). Enquanto não houver capa, os cards e a página do evento
+caem no gradiente por categoria (`CATEGORY_COVER`), como já existia.
+
+### Fotos postadas por participantes
+
+Nova tabela `event_photos`, com `visibilidade` (`evento` | `publica`)
+escolhida no momento do envio. RLS: participantes confirmados e o
+organizador sempre veem as fotos do evento; fotos marcadas como
+públicas ficam visíveis para qualquer autenticado. Upload usa um
+bucket novo do Supabase Storage (`event-media`, público) — a nota de
+segurança sobre isso (nomes de arquivo não adivinháveis, mas não
+criptograficamente privados) está comentada na migração 0013.

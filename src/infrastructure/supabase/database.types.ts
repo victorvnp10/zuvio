@@ -69,6 +69,7 @@ export interface Database {
           modo_custo_colaborativo: "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes" | null;
           valor_por_pessoa: number | null;
           valor_total_rateio: number | null;
+          capa_url: string | null;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],
@@ -103,6 +104,22 @@ export interface Database {
           event_id: string;
           nome: string;
           criado_por: string;
+        };
+      };
+      event_photos: {
+        Row: {
+          id: string;
+          event_id: string;
+          autor_id: string;
+          foto_url: string;
+          visibilidade: "evento" | "publica";
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          autor_id: string;
+          foto_url: string;
+          visibilidade: "evento" | "publica";
         };
       };
       chat_messages: {

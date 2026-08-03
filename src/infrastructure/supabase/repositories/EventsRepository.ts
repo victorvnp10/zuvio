@@ -39,6 +39,7 @@ export interface UpdateEventInput {
   vagasTotal?: number;
   quorumMinimo?: number;
   tipoEvento?: TipoEvento;
+  capaUrl?: string | null;
   valorEntrada?: number | null;
   linkPagamento?: string | null;
   modoListaColaborativa?: ModoListaColaborativa | null;
@@ -133,6 +134,7 @@ export const EventsRepository = {
     if (changes.vagasTotal !== undefined) patch.vagas_total = changes.vagasTotal;
     if (changes.quorumMinimo !== undefined) patch.quorum_minimo = changes.quorumMinimo;
     if (changes.tipoEvento !== undefined) patch.tipo_evento = changes.tipoEvento;
+    if (changes.capaUrl !== undefined) patch.capa_url = changes.capaUrl;
     if (changes.valorEntrada !== undefined) patch.valor_entrada = changes.valorEntrada;
     if (changes.linkPagamento !== undefined) patch.link_pagamento = changes.linkPagamento;
     if (changes.modoListaColaborativa !== undefined)

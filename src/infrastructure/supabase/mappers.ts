@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   CollaborativeItem,
   Commitment,
+  EventPhoto,
   EventProposal,
   Friendship,
   FriendGroup,
@@ -19,6 +20,7 @@ type RatingRow = Database["public"]["Tables"]["ratings"]["Row"];
 type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
 type FriendGroupRow = Database["public"]["Tables"]["friend_groups"]["Row"];
 type CollaborativeItemRow = Database["public"]["Tables"]["collaborative_items"]["Row"];
+type EventPhotoRow = Database["public"]["Tables"]["event_photos"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -56,6 +58,7 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   status: row.status,
   criadoEm: row.criado_em,
   tipoEvento: row.tipo_evento,
+  capaUrl: row.capa_url,
   valorEntrada: row.valor_entrada,
   linkPagamento: row.link_pagamento,
   modoListaColaborativa: row.modo_lista_colaborativa,
@@ -115,5 +118,14 @@ export const toCollaborativeItem = (row: CollaborativeItemRow): CollaborativeIte
   nome: row.nome,
   criadoPor: row.criado_por,
   reservadoPor: row.reservado_por,
+  criadoEm: row.criado_em,
+});
+
+export const toEventPhoto = (row: EventPhotoRow): EventPhoto => ({
+  id: row.id,
+  eventId: row.event_id,
+  autorId: row.autor_id,
+  fotoUrl: row.foto_url,
+  visibilidade: row.visibilidade,
   criadoEm: row.criado_em,
 });
