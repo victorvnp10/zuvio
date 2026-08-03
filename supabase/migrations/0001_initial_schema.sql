@@ -413,11 +413,11 @@ begin
 
   update events
   set vagas_confirmadas = vagas_confirmadas + 1,
-      status = case
+      status = (case
         when vagas_confirmadas + 1 >= vagas_total then 'fechado'
         when vagas_confirmadas + 1 >= quorum_minimo then 'quorum_atingido'
         else 'aberto'
-      end
+      end)::event_status
   where id = p_event_id;
 
   return v_commitment;
@@ -452,12 +452,12 @@ begin
 
   update events
   set vagas_confirmadas = greatest(0, vagas_confirmadas - 1),
-      status = case
+      status = (case
         when v_event.status in ('cancelado', 'concluido') then v_event.status
         when greatest(0, vagas_confirmadas - 1) >= vagas_total then 'fechado'
         when greatest(0, vagas_confirmadas - 1) >= quorum_minimo then 'quorum_atingido'
         else 'aberto'
-      end
+      end)::event_status
   where id = p_event_id;
 end;
 $$;

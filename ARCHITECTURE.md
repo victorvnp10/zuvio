@@ -268,3 +268,19 @@ feita (só não pode mais ser um NOT NULL de coluna).
   Tem também um custo opcional: valor fixo por pessoa, ou rateado pelo
   total de quem fez check-in de verdade (`computeRateioPerPerson` no
   domínio) — nunca por quem só confirmou e não apareceu.
+
+## Correção crítica: ninguém conseguia confirmar presença
+
+`commit_to_event` e `cancel_commitment` usavam um `CASE` com literais de
+texto simples (`'aberto'`, `'fechado'`, etc.) atribuído direto a
+`status` (tipo `event_status`, um enum) dentro de um `UPDATE ... SET`.
+O Postgres resolve o tipo de um `CASE` assim como `text` — ele não
+"olha para frente" para a coluna de destino, mesmo dentro do mesmo
+UPDATE. Resultado: erro `column "status" is of type event_status but
+expression is of type text` para QUALQUER usuário tentando confirmar
+presença (ou cancelar) — quebrava desde a primeira instalação, só não
+tinha sido testado ainda até agora.
+
+**Correção**: cast explícito `(case ... end)::event_status`. Ver
+`supabase/migrations/0010_fix_status_type_cast.sql` — a `0001` já vem
+corrigida para instalações novas.
