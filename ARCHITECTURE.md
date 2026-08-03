@@ -174,3 +174,40 @@ qualquer ciclo possível entre essas tabelas. Ver
 `supabase/migrations/0003_fix_events_commitments_rls_recursion.sql`
 (para quem já rodou `0001`/`0002`) — a `0001` já vem corrigida para
 instalações novas, sem precisar de nenhuma migração incremental.
+
+## Sistema de amigos + edição completa do evento
+
+### Amigos (`friendships`, `friend_groups`, `friend_group_members`)
+
+- **Amizade** é aceite mútuo (mesma filosofia do compromisso de
+  eventos) — pedido enviado, a outra pessoa aceita ou recusa.
+- **"Amigo"** é o grupo implícito: qualquer amizade aceita já conta
+  como isso, sem precisar de nenhuma linha em `friend_groups`.
+- **"Melhores Amigos"** é um grupo de sistema (`is_system = true`),
+  criado automaticamente para todo usuário no cadastro (trigger
+  `on_profile_created_default_friend_group`) — não pode ser renomeado
+  nem excluído pela UI.
+- **Grupos customizados** ("Amigos da escola", "Amigos do trabalho"):
+  livres, o usuário nomeia como quiser. Um amigo pode estar em vários
+  grupos ao mesmo tempo (`friend_group_members` é N:N).
+- `are_friends(a, b)`: função `security definer`, pronta para ser usada
+  pela Fase 1.2 (convite direcionado por grupo) sem risco de recursão
+  de RLS — mesma técnica usada para resolver a recursão de
+  `events`/`commitments`.
+
+### Edição completa do evento
+
+Reverti a trava que eu tinha colocado antes (vagas/quórum/categoria/
+modalidade só editáveis na criação). Agora tudo é editável — as
+constraints do banco (`quorum_within_vagas`, `vagas_within_total`) já
+impediam estados inválidos, e a migração 0004 adiciona o gatilho que
+faltava: recalcular `status` automaticamente quando `vagas_total`/
+`quorum_minimo` mudam (ex.: reduzir o quórum para um valor já atingido
+pelas confirmações atuais libera o chat na hora).
+
+## Próximo passo natural: Fase 1.2 — convite direcionado por grupo
+
+Ainda não implementado nesta rodada: na criação de um evento Amigos/
+Híbrida, escolher uma ou mais listas (ou amigos individuais) para
+convidar diretamente, com o convite aparecendo na Central de
+Notificações do destinatário (sem push real ainda — isso é Fase 5).

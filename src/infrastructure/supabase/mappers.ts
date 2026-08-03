@@ -3,6 +3,8 @@ import type {
   ChatMessage,
   Commitment,
   EventProposal,
+  Friendship,
+  FriendGroup,
   Profile,
   Rating,
 } from "../../domain/entities/types";
@@ -13,6 +15,8 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type CommitmentRow = Database["public"]["Tables"]["commitments"]["Row"];
 type ChatMessageRow = Database["public"]["Tables"]["chat_messages"]["Row"];
 type RatingRow = Database["public"]["Tables"]["ratings"]["Row"];
+type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
+type FriendGroupRow = Database["public"]["Tables"]["friend_groups"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -74,5 +78,21 @@ export const toRating = (row: RatingRow): Rating => ({
   avaliadoId: row.avaliado_id,
   nota: row.nota,
   comentario: row.comentario,
+  criadoEm: row.criado_em,
+});
+
+export const toFriendship = (row: FriendshipRow): Friendship => ({
+  id: row.id,
+  requesterId: row.requester_id,
+  addresseeId: row.addressee_id,
+  status: row.status,
+  criadoEm: row.criado_em,
+});
+
+export const toFriendGroup = (row: FriendGroupRow): FriendGroup => ({
+  id: row.id,
+  ownerId: row.owner_id,
+  nome: row.nome,
+  isSystem: row.is_system,
   criadoEm: row.criado_em,
 });

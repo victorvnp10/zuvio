@@ -21,6 +21,10 @@ export interface UpdateEventInput {
   endereco?: string;
   geo?: { lat: number; lng: number } | null;
   dataHoraISO?: string;
+  categoria?: EventCategory;
+  modalidade?: EventProposal["modalidade"];
+  vagasTotal?: number;
+  quorumMinimo?: number;
 }
 
 export const EventsRepository = {
@@ -84,12 +88,12 @@ export const EventsRepository = {
   },
 
   /**
-   * Só os campos de conteúdo podem mudar depois de criado (título,
-   * descrição, local, data) — vagas/quórum/modalidade/categoria ficam
-   * travados após a criação de propósito: mudar `vagas_total` ou
-   * `quorum_minimo` depois que já existem confirmações quebraria a
-   * invariante do quórum; mudar `modalidade` poderia burlar a regra de
-   * que eventos Restritos nunca aparecem no feed público.
+   * Todo campo de conteúdo E de regra do evento pode ser editado depois
+   * de criado — inclusive vagas e quórum. As constraints do banco
+   * (`quorum_within_vagas`, `vagas_within_total`) impedem estados
+   * inválidos (reduzir vagas abaixo do que já foi confirmado, ou
+   * quórum maior que o total), e um trigger recalcula `status`
+   * automaticamente depois da mudança (ver migração 0004).
    */
   async update(eventId: string, changes: UpdateEventInput): Promise<EventProposal> {
     const patch: Record<string, unknown> = {};
@@ -97,6 +101,10 @@ export const EventsRepository = {
     if (changes.descricao !== undefined) patch.descricao = changes.descricao;
     if (changes.endereco !== undefined) patch.endereco = changes.endereco;
     if (changes.dataHoraISO !== undefined) patch.data_hora = changes.dataHoraISO;
+    if (changes.categoria !== undefined) patch.categoria = changes.categoria;
+    if (changes.modalidade !== undefined) patch.modalidade = changes.modalidade;
+    if (changes.vagasTotal !== undefined) patch.vagas_total = changes.vagasTotal;
+    if (changes.quorumMinimo !== undefined) patch.quorum_minimo = changes.quorumMinimo;
     if (changes.geo !== undefined) {
       patch.geo_lat = changes.geo?.lat ?? null;
       patch.geo_lng = changes.geo?.lng ?? null;

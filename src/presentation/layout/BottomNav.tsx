@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Compass, PlusCircle, MessageCircle, User } from "lucide-react";
+import { Compass, PlusCircle, MessageCircle, User, Users } from "lucide-react";
 
 const ITEMS = [
   { to: "/", icon: Compass, label: "Descobrir", end: true },
-  { to: "/meus-eventos", icon: MessageCircle, label: "Meus Eventos" },
+  { to: "/meus-eventos", icon: MessageCircle, label: "Eventos" },
   { to: "/criar", icon: PlusCircle, label: "Criar" },
+  { to: "/amigos", icon: Users, label: "Amigos" },
   { to: "/perfil", icon: User, label: "Perfil" },
 ];
 

@@ -7,6 +7,7 @@ import { EditEventScreen } from "./presentation/screens/EditEventScreen";
 import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
+import { FriendsScreen } from "./presentation/screens/FriendsScreen";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -65,6 +66,14 @@ export default function App() {
           element={
             <RequireAuth>
               <MyEventsScreen />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/amigos"
+          element={
+            <RequireAuth>
+              <FriendsScreen />
             </RequireAuth>
           }
         />

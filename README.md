@@ -18,10 +18,14 @@ serviços (Supabase, GitHub, Vercel).
    região mais perto de onde seus usuários estarão.
 3. Espere o projeto provisionar (1-2 minutos).
 4. No menu lateral, abra o **SQL Editor** → **New query**.
-5. Abra o arquivo `supabase/migrations/0001_initial_schema.sql` deste
-   repositório, copie o conteúdo inteiro, cole no editor e clique em
-   **Run**. Isso cria todas as tabelas, as políticas de segurança (RLS)
-   e as funções do backend (confirmação de presença, check-in, etc.).
+5. Rode, **em ordem**, todos os arquivos de `supabase/migrations/`:
+   `0001_initial_schema.sql`, `0002_fix_commitments_rls_recursion.sql`,
+   `0003_fix_events_commitments_rls_recursion.sql`,
+   `0004_editable_vagas_quorum.sql`, `0005_friends_system.sql`. Para
+   cada um: copie o conteúdo, cole no editor e clique em **Run** —
+   espere "Success" antes de ir para o próximo. Isso cria todas as
+   tabelas, as políticas de segurança (RLS), o sistema de amigos e as
+   funções do backend.
    - Se der erro de "relation already exists" (rodou duas vezes sem
      limpar), rode antes: `drop schema public cascade; create schema public;`
      — só faça isso se ainda não tiver dados de teste que importam.

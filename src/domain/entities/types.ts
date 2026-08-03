@@ -118,3 +118,24 @@ export interface Invite {
   expiraEm: string | null;
   usadoPor: string[];
 }
+
+export type FriendshipStatus = "pendente" | "aceito";
+
+export interface Friendship {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: FriendshipStatus;
+  criadoEm: string;
+}
+
+/** Um agrupamento nomeado dentro dos amigos de alguém — "Melhores
+ * Amigos" é criado automaticamente (isSystem) para todo usuário;
+ * "Amigos da escola", "Amigos do trabalho" etc. são criados livremente. */
+export interface FriendGroup {
+  id: string;
+  ownerId: string;
+  nome: string;
+  isSystem: boolean;
+  criadoEm: string;
+}

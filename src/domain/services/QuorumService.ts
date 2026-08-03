@@ -65,6 +65,15 @@ export const nextStatusAfterCommitmentChange = (
 export const isValidQuorum = (quorumMinimo: number, vagasTotal: number): boolean =>
   quorumMinimo >= 1 && quorumMinimo <= vagasTotal;
 
+/**
+ * Regra de validação: ao editar as vagas de um evento já existente,
+ * nunca dá pra reduzir abaixo de quem já confirmou presença — o banco
+ * também protege isso via constraint (`vagas_within_total`), esta é só
+ * a checagem otimista no cliente antes de gastar a chamada de rede.
+ */
+export const canReduceVagasTo = (novoTotal: number, vagasConfirmadas: number): boolean =>
+  novoTotal >= vagasConfirmadas;
+
 /** Um evento aceita novas confirmações enquanto não estiver fechado/cancelado/concluído. */
 export const acceptsNewCommitments = (status: EventStatus): boolean =>
   status === "aberto" || status === "quorum_atingido";

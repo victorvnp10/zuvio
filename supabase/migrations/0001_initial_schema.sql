@@ -614,6 +614,37 @@ create trigger commitments_status_change
   when (old.status is distinct from new.status)
   execute function trigger_recompute_reliability();
 
+-- Recalcula o status do evento automaticamente quando vagas_total ou
+-- quorum_minimo são editados depois de criado (ver 0004 para o
+-- racional completo).
+create or replace function recompute_event_status_on_edit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.status in ('cancelado', 'concluido') then
+    return new;
+  end if;
+
+  if new.vagas_confirmadas >= new.vagas_total then
+    new.status := 'fechado';
+  elsif new.vagas_confirmadas >= new.quorum_minimo then
+    new.status := 'quorum_atingido';
+  else
+    new.status := 'aberto';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger events_recompute_status_on_edit
+  before update of vagas_total, quorum_minimo on events
+  for each row
+  execute function recompute_event_status_on_edit();
+
 -- Cria a linha em `profiles` automaticamente após o cadastro no Supabase
 -- Auth — os campos obrigatórios (nome, data_nascimento, localizacao_base)
 -- vêm de `raw_user_meta_data`, preenchidos no momento do signUp.

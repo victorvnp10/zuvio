@@ -163,6 +163,45 @@ export interface Database {
           blocked_id: string;
         };
       };
+      friendships: {
+        Row: {
+          id: string;
+          requester_id: string;
+          addressee_id: string;
+          status: "pendente" | "aceito";
+          criado_em: string;
+          respondido_em: string | null;
+        };
+        Insert: {
+          requester_id: string;
+          addressee_id: string;
+        };
+      };
+      friend_groups: {
+        Row: {
+          id: string;
+          owner_id: string;
+          nome: string;
+          is_system: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          owner_id: string;
+          nome: string;
+          is_system: boolean;
+        };
+      };
+      friend_group_members: {
+        Row: {
+          group_id: string;
+          friend_user_id: string;
+          criado_em: string;
+        };
+        Insert: {
+          group_id: string;
+          friend_user_id: string;
+        };
+      };
     };
     Functions: {
       commit_to_event: {
