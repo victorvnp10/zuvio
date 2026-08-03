@@ -211,6 +211,104 @@ Deno.serve(async (req) => {
       return jsonResponse({ removed: true });
     }
 
+    // O organizador nunca passa pelo fluxo de "comprometer-se" no
+    // próprio evento (não tem linha em `commitments`), então precisa de
+    // uma ação separada, operando direto sobre `events` em vez de
+    // `commitments`. Não mexe em vagas_confirmadas/quórum.
+    if (action === "sync_organizer_event") {
+      const { event_id } = body;
+
+      const { data: event } = await adminClient
+        .from("events")
+        .select("*")
+        .eq("id", event_id)
+        .eq("criador_id", userId) // só o próprio organizador sincroniza
+        .single();
+
+      if (!event) return jsonResponse({ error: "Evento não encontrado" }, 404);
+
+      const accessToken = await ensureValidAccessToken(userId);
+      if (!accessToken) {
+        return jsonResponse(
+          { synced: false, reason: "Conta Google não conectada ou sem permissão de agenda." },
+          200
+        );
+      }
+
+      const startISO = event.data_hora;
+      const endISO = new Date(new Date(event.data_hora).getTime() + 2 * 60 * 60 * 1000).toISOString();
+
+      const calendarEvent = {
+        summary: event.titulo,
+        description: event.descricao,
+        location: event.endereco,
+        start: { dateTime: startISO },
+        end: { dateTime: endISO },
+      };
+
+      const method = event.organizador_google_calendar_event_id ? "PATCH" : "POST";
+      const url = event.organizador_google_calendar_event_id
+        ? `https://www.googleapis.com/calendar/v3/calendars/primary/events/${event.organizador_google_calendar_event_id}`
+        : "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+
+      const googleResponse = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(calendarEvent),
+      });
+
+      if (!googleResponse.ok) {
+        return jsonResponse(
+          { synced: false, reason: `Erro do Google Calendar: ${await googleResponse.text()}` },
+          200
+        );
+      }
+
+      const created = await googleResponse.json();
+
+      if (!event.organizador_google_calendar_event_id) {
+        await adminClient
+          .from("events")
+          .update({ organizador_google_calendar_event_id: created.id })
+          .eq("id", event_id);
+      }
+
+      return jsonResponse({ synced: true, google_calendar_event_id: created.id });
+    }
+
+    if (action === "remove_organizer_event") {
+      const { event_id } = body;
+
+      const { data: event } = await adminClient
+        .from("events")
+        .select("*")
+        .eq("id", event_id)
+        .eq("criador_id", userId)
+        .single();
+
+      if (!event?.organizador_google_calendar_event_id) {
+        return jsonResponse({ removed: false });
+      }
+
+      const accessToken = await ensureValidAccessToken(userId);
+      if (!accessToken) return jsonResponse({ removed: false });
+
+      await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${event.organizador_google_calendar_event_id}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      await adminClient
+        .from("events")
+        .update({ organizador_google_calendar_event_id: null })
+        .eq("id", event_id);
+
+      return jsonResponse({ removed: true });
+    }
+
     return jsonResponse({ error: "Ação desconhecida" }, 400);
   } catch (err) {
     return jsonResponse({ error: err instanceof Error ? err.message : "Erro interno" }, 500);

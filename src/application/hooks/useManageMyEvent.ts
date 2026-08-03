@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { EventsRepository, type UpdateEventInput } from "../../infrastructure/supabase/repositories/EventsRepository";
+import { GoogleCalendarRepository } from "../../infrastructure/supabase/repositories/GoogleCalendarRepository";
 import type { EventProposal } from "../../domain/entities/types";
 
 export function useManageMyEvent() {
@@ -11,7 +12,13 @@ export function useManageMyEvent() {
       setIsSubmitting(true);
       setError(null);
       try {
-        return await EventsRepository.update(eventId, changes);
+        const updated = await EventsRepository.update(eventId, changes);
+        // Se data/local/título mudou, atualiza também o evento já
+        // criado na agenda do organizador (melhor esforço).
+        GoogleCalendarRepository.syncOrganizerEvent(eventId).catch((err) => {
+          console.error("Não foi possível atualizar o Google Calendar:", err);
+        });
+        return updated;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível salvar as alterações.");
         return null;
@@ -27,6 +34,9 @@ export function useManageMyEvent() {
     setError(null);
     try {
       await EventsRepository.cancel(eventId);
+      GoogleCalendarRepository.removeOrganizerEvent(eventId).catch((err) => {
+        console.error("Não foi possível remover o evento do Google Calendar:", err);
+      });
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível cancelar a proposta.");

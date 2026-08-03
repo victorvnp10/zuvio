@@ -27,4 +27,22 @@ export const GoogleCalendarRepository = {
     });
     if (error) throw new Error(error.message);
   },
+
+  /** Sincroniza o evento na agenda do PRÓPRIO ORGANIZADOR — não passa
+   * por `commitments`, já que o criador nunca "confirma presença" no
+   * próprio evento. */
+  async syncOrganizerEvent(eventId: string): Promise<{ synced: boolean; reason?: string }> {
+    const { data, error } = await supabase.functions.invoke("sync-google-calendar", {
+      body: { action: "sync_organizer_event", event_id: eventId },
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async removeOrganizerEvent(eventId: string): Promise<void> {
+    const { error } = await supabase.functions.invoke("sync-google-calendar", {
+      body: { action: "remove_organizer_event", event_id: eventId },
+    });
+    if (error) throw new Error(error.message);
+  },
 };
