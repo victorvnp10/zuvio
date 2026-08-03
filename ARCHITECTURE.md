@@ -284,3 +284,13 @@ tinha sido testado ainda até agora.
 **Correção**: cast explícito `(case ... end)::event_status`. Ver
 `supabase/migrations/0010_fix_status_type_cast.sql` — a `0001` já vem
 corrigida para instalações novas.
+
+## Correção: chat e placar não atualizavam em tempo real
+
+Nenhuma tabela do Supabase transmite mudanças via Realtime por
+padrão — precisa ser adicionada explicitamente à publicação
+`supabase_realtime`. O código de assinatura
+(`ChatRepository.subscribeToMessages`, `EventsRepository.subscribeToEvent`)
+sempre esteve correto, mas sem esse passo no banco ele nunca recebia
+nada — só uma recarga da página buscava o estado atual. Ver
+`supabase/migrations/0011_enable_realtime_chat.sql`.
