@@ -11,6 +11,7 @@ import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
 import { CollaborativeListSection } from "../components/CollaborativeListSection";
+import { BottomNav } from "../layout/BottomNav";
 import { isChatUnlocked } from "../../domain/services/QuorumService";
 
 export function EventDetailScreen() {
@@ -48,7 +49,7 @@ export function EventDetailScreen() {
   const alreadyCheckedIn = myCommitment?.status === "check-in";
 
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-100 pb-10">
+    <div className="min-h-screen bg-ink-900 text-ink-100 pb-20">
       <header className="sticky top-0 z-20 bg-ink-900/85 backdrop-blur-md border-b border-ink-800 px-4 py-3 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-ink-300 hover:text-ink-100">
           <ArrowLeft size={22} />
@@ -178,6 +179,8 @@ export function EventDetailScreen() {
           </p>
         )}
       </main>
+
+      <BottomNav />
     </div>
   );
 }
