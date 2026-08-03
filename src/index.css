@@ -73,3 +73,12 @@ header {
 .app-bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Carrossel horizontal sem barra de rolagem visível (categorias, etc.) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

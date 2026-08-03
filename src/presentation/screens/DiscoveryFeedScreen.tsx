@@ -5,8 +5,8 @@ import { ptBR } from "date-fns/locale";
 import { AppShell } from "../layout/AppShell";
 import { useDiscoveryFeed } from "../../application/hooks/useDiscoveryFeed";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
-import { QuorumBar } from "../components/QuorumMeter";
-import { CategoryBadge, CATEGORY_OPTIONS } from "../components/CategoryBadge";
+import { QuorumMeter, QuorumBar } from "../components/QuorumMeter";
+import { CategoryBadge, CATEGORY_OPTIONS, CATEGORY_COVER } from "../components/CategoryBadge";
 import type { EventCategory } from "../../domain/entities/types";
 import { MapPin, CalendarDays } from "lucide-react";
 
@@ -17,10 +17,10 @@ export function DiscoveryFeedScreen() {
 
   return (
     <AppShell title="Descobrir">
-      <div className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-3 -mx-1 px-1">
         <button
           onClick={() => setCategoria(undefined)}
-          className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+          className={`shrink-0 snap-start text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
             !categoria
               ? "bg-coral-500 border-coral-500 text-ink-950"
               : "bg-transparent border-ink-700 text-ink-300"
@@ -32,7 +32,7 @@ export function DiscoveryFeedScreen() {
           <button
             key={opt.value}
             onClick={() => setCategoria(opt.value)}
-            className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+            className={`shrink-0 snap-start text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
               categoria === opt.value
                 ? "bg-coral-500 border-coral-500 text-ink-950"
                 : "bg-transparent border-ink-700 text-ink-300"
@@ -59,36 +59,44 @@ export function DiscoveryFeedScreen() {
         </div>
       )}
 
-      <div className="space-y-4 mt-2">
+      <div className="space-y-5 mt-2">
         {events?.map((event) => {
           const quorum = summarizeQuorum(event);
+          const cover = CATEGORY_COVER[event.categoria];
           return (
             <button
               key={event.id}
               onClick={() => navigate(`/eventos/${event.id}`)}
-              className="w-full text-left bg-ink-800/60 border border-ink-700 rounded-2xl p-4 space-y-3 hover:border-coral-500/40 transition-colors"
+              className="w-full text-left bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden hover:border-coral-500/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className={`relative h-32 bg-gradient-to-br ${cover.gradient} flex items-center justify-center`}>
+                <span className="text-5xl opacity-90">{cover.emoji}</span>
+                <div className="absolute top-3 left-3">
                   <CategoryBadge categoria={event.categoria} />
-                  <h3 className="font-display font-semibold text-lg text-ink-100 mt-2">
-                    {event.titulo}
-                  </h3>
+                </div>
+                <div className="absolute -bottom-5 right-4 bg-ink-800 rounded-full p-1 shadow-lg">
+                  <QuorumMeter quorum={quorum} size={48} />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1 text-sm text-ink-400">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays size={14} />
-                  {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin size={14} />
-                  {event.local.endereco}
-                </span>
-              </div>
+              <div className="p-4 pt-6 space-y-3">
+                <h3 className="font-display font-semibold text-lg text-ink-100">
+                  {event.titulo}
+                </h3>
 
-              <QuorumBar quorum={quorum} />
+                <div className="flex flex-col gap-1 text-sm text-ink-400">
+                  <span className="flex items-center gap-1.5">
+                    <CalendarDays size={14} />
+                    {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} />
+                    {event.local.endereco}
+                  </span>
+                </div>
+
+                <QuorumBar quorum={quorum} />
+              </div>
             </button>
           );
         })}

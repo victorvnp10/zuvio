@@ -25,6 +25,8 @@ export function CreateEventScreen() {
   const [descricao, setDescricao] = useState("");
   const [dataHora, setDataHora] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "capturing" | "done" | "error">("idle");
   const [vagasTotal, setVagasTotal] = useState(5);
   const [quorumMinimo, setQuorumMinimo] = useState(3);
 
@@ -40,7 +42,7 @@ export function CreateEventScreen() {
       descricao,
       dataHoraISO: new Date(dataHora).toISOString(),
       endereco,
-      geo: null, // geolocalização precisa: capturar via mapa/GPS numa iteração futura
+      geo,
       modalidade,
       vagasTotal,
       quorumMinimo,
@@ -154,10 +156,40 @@ export function CreateEventScreen() {
               placeholder="Endereço ou ponto de encontro"
               className="w-full bg-ink-800 border border-ink-700 rounded-xl p-3 text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
             />
-            <p className="text-xs text-ink-500 mt-1">
-              Coordenadas de mapa para check-in geolocalizado entram numa próxima etapa —
-              por ora o check-in fica disponível assim que o local tiver coordenadas.
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setGeoStatus("capturing");
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    setGeo({ lat: position.coords.latitude, lng: position.coords.longitude });
+                    setGeoStatus("done");
+                  },
+                  () => setGeoStatus("error"),
+                  { enableHighAccuracy: true, timeout: 10_000 }
+                );
+              }}
+              className="text-xs font-semibold text-coral-500 mt-2"
+            >
+              {geoStatus === "capturing" ? "Obtendo localização..." : "📍 Usar minha localização atual"}
+            </button>
+            {geoStatus === "done" && (
+              <p className="text-xs text-quorum-500 mt-1">
+                Localização capturada — o check-in geolocalizado vai funcionar neste evento.
+              </p>
+            )}
+            {geoStatus === "error" && (
+              <p className="text-xs text-red-400 mt-1">
+                Não foi possível obter sua localização. Sem coordenadas, o check-in
+                geolocalizado não ficará disponível neste evento (só o resto do fluxo).
+              </p>
+            )}
+            {geoStatus === "idle" && (
+              <p className="text-xs text-ink-500 mt-1">
+                Sem coordenadas, o evento é criado normalmente, mas o check-in geolocalizado
+                não fica disponível.
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -149,6 +149,60 @@ create table blocks (
 );
 
 -- -----------------------------------------------------------------------------
+-- Função auxiliar para RLS (definida antes das políticas que a usam)
+-- -----------------------------------------------------------------------------
+-- Checa se um usuário é participante ativo de um evento sem disparar a
+-- própria política de RLS de `commitments` recursivamente — por isso é
+-- `security definer` (dona `postgres`, isenta da própria RLS por
+-- padrão) em vez de uma subquery direta em `commitments` dentro da
+-- política de `commitments`. Uma subquery direta causaria "infinite
+-- recursion detected in policy for relation commitments".
+create or replace function is_event_participant(p_event_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from commitments
+    where event_id = p_event_id
+      and user_id = p_user_id
+      and status <> 'cancelado'
+  );
+$$;
+
+-- As duas funções abaixo existem pelo mesmo motivo: qualquer subquery
+-- direta entre `events` e `commitments` dentro de uma política de RLS
+-- forma um ciclo (events → commitments → events → ...), que o Postgres
+-- também rejeita como recursão infinita — não é só self-reference
+-- direto que causa o problema, referência cruzada entre duas tabelas
+-- também causa.
+create or replace function is_event_creator(p_event_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from events where id = p_event_id and criador_id = p_user_id
+  );
+$$;
+
+create or replace function has_redeemed_invite(p_event_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from invites where event_id = p_event_id and p_user_id = any(usado_por)
+  );
+$$;
+
+-- -----------------------------------------------------------------------------
 -- ROW LEVEL SECURITY (todas as tabelas já existem a partir daqui)
 -- -----------------------------------------------------------------------------
 
@@ -180,14 +234,8 @@ create policy "Descoberta pública de eventos não-restritos"
   using (
     modalidade <> 'restrita'
     or criador_id = auth.uid()
-    or exists (
-      select 1 from commitments c
-      where c.event_id = events.id and c.user_id = auth.uid()
-    )
-    or exists (
-      select 1 from invites i
-      where i.event_id = events.id and auth.uid() = any(i.usado_por)
-    )
+    or is_event_participant(id, auth.uid())
+    or has_redeemed_invite(id, auth.uid())
   );
 
 create policy "Usuário autenticado cria proposta"
@@ -220,13 +268,8 @@ create policy "Ver compromissos de eventos onde participo"
   to authenticated
   using (
     user_id = auth.uid()
-    or exists (
-      select 1 from events e where e.id = event_id and e.criador_id = auth.uid()
-    )
-    or exists (
-      select 1 from commitments c2
-      where c2.event_id = commitments.event_id and c2.user_id = auth.uid()
-    )
+    or is_event_creator(event_id, auth.uid())
+    or is_event_participant(event_id, auth.uid())
   );
 
 -- INSERT/UPDATE de compromissos NÃO tem policy direta — só acontece

@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, MapPin, CalendarDays, Users } from "lucide-react";
+import { ArrowLeft, MapPin, CalendarDays, Users, Pencil } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useAuth } from "../../application/context/AuthContext";
 import { QuorumMeter } from "../components/QuorumMeter";
 import { CategoryBadge } from "../components/CategoryBadge";
 import { ChatPanel } from "../components/ChatPanel";
+import { ReportMenu } from "../components/ReportMenu";
+import { RatingSection } from "../components/RatingSection";
 import { isChatUnlocked } from "../../domain/services/QuorumService";
 
 export function EventDetailScreen() {
@@ -18,6 +20,7 @@ export function EventDetailScreen() {
     isLoading,
     quorum,
     myCommitment,
+    commitments,
     isActing,
     actionError,
     handleCommit,
@@ -25,7 +28,7 @@ export function EventDetailScreen() {
     handleCheckin,
   } = useEventDetail(eventId);
 
-  if (isLoading || !event || !quorum) {
+  if (isLoading || !event || !quorum || !user) {
     return (
       <div className="min-h-screen bg-ink-900 flex items-center justify-center text-ink-400">
         Carregando...
@@ -33,8 +36,10 @@ export function EventDetailScreen() {
     );
   }
 
-  const isCreator = event.criadorId === user?.id;
-  const chatUnlocked = isChatUnlocked(event.status);
+  const isCreator = event.criadorId === user.id;
+  const isCancelled = event.status === "cancelado";
+  const isConcluded = event.status === "concluido";
+  const chatUnlocked = isChatUnlocked(event.status) && !isCancelled;
   const isCommitted = myCommitment && myCommitment.status !== "cancelado";
   const canCheckin = myCommitment?.status === "confirmado";
   const alreadyCheckedIn = myCommitment?.status === "check-in";
@@ -45,17 +50,35 @@ export function EventDetailScreen() {
         <button onClick={() => navigate(-1)} className="text-ink-300 hover:text-ink-100">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="font-display font-semibold truncate">{event.titulo}</h1>
+        <h1 className="font-display font-semibold truncate flex-1">{event.titulo}</h1>
+        {isCreator && !isCancelled && (
+          <button
+            onClick={() => navigate(`/eventos/${event.id}/editar`)}
+            className="p-2 text-ink-300 hover:text-ink-100"
+            aria-label="Editar"
+          >
+            <Pencil size={18} />
+          </button>
+        )}
+        <ReportMenu eventId={event.id} criadorId={event.criadorId} />
       </header>
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
+        {isCancelled && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-center">
+            <p className="text-sm font-semibold text-red-400">
+              Esta proposta foi cancelada pelo organizador.
+            </p>
+          </div>
+        )}
+
         <div className="bg-ink-800/60 border border-ink-700 rounded-2xl p-5 space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <CategoryBadge categoria={event.categoria} />
               <h2 className="font-display text-xl font-semibold mt-2">{event.titulo}</h2>
             </div>
-            <QuorumMeter quorum={quorum} />
+            {!isCancelled && <QuorumMeter quorum={quorum} />}
           </div>
 
           <p className="text-sm text-ink-300 leading-relaxed">{event.descricao}</p>
@@ -69,16 +92,20 @@ export function EventDetailScreen() {
               <MapPin size={16} />
               {event.local.endereco}
             </span>
-            <span className="flex items-center gap-2">
-              <Users size={16} />
-              {quorum.vagasConfirmadas} de {quorum.vagasTotal} vagas confirmadas
-              {quorum.quorumAtingido ? " · quórum atingido 🎉" : ` · faltam ${quorum.quorumMinimo - quorum.vagasConfirmadas} para o quórum`}
-            </span>
+            {!isCancelled && (
+              <span className="flex items-center gap-2">
+                <Users size={16} />
+                {quorum.vagasConfirmadas} de {quorum.vagasTotal} vagas confirmadas
+                {quorum.quorumAtingido
+                  ? " · quórum atingido 🎉"
+                  : ` · faltam ${quorum.quorumMinimo - quorum.vagasConfirmadas} para o quórum`}
+              </span>
+            )}
           </div>
 
           {actionError && <p className="text-sm text-red-400">{actionError}</p>}
 
-          {!isCreator && !isCommitted && (
+          {!isCancelled && !isCreator && !isCommitted && (
             <button
               onClick={handleCommit}
               disabled={isActing || quorum.vagasEsgotadas}
@@ -88,7 +115,7 @@ export function EventDetailScreen() {
             </button>
           )}
 
-          {!isCreator && isCommitted && !alreadyCheckedIn && (
+          {!isCancelled && !isCreator && isCommitted && !alreadyCheckedIn && (
             <div className="space-y-2">
               <p className="text-sm text-quorum-500 font-medium">✓ Compromisso registrado</p>
               <div className="flex gap-2">
@@ -116,6 +143,10 @@ export function EventDetailScreen() {
             <p className="text-sm text-quorum-500 font-medium">✓ Check-in confirmado — bom evento!</p>
           )}
         </div>
+
+        {isConcluded && alreadyCheckedIn && (
+          <RatingSection eventId={event.id} commitments={commitments} currentUserId={user.id} />
+        )}
 
         {chatUnlocked && isCommitted && eventId && <ChatPanel eventId={eventId} />}
 

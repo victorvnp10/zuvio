@@ -101,21 +101,76 @@ para que sempre sinalize esse momento específico.
 - [x] Denúncia/bloqueio de usuário
 - [x] Modalidade Restrita (convite por código não-adivinhável, com expiração/uso único)
 
+## O que foi completado nesta rodada
+
+- **Editar/cancelar proposta** (`MyEventsScreen`, `EditEventScreen`):
+  só campos de conteúdo são editáveis (título, descrição, local, data)
+  — vagas/quórum/modalidade/categoria ficam travados após a criação,
+  de propósito (mudar isso depois quebraria a invariante do quórum ou a
+  regra de visibilidade de eventos Restritos). "Excluir" é implementado
+  como cancelamento (`status = 'cancelado'`), não uma exclusão física —
+  quem já confirmou presença continua vendo que o evento existiu, em
+  vez de ele simplesmente sumir sem explicação.
+- **Avaliação mútua pós-evento** (`RatingSection`,
+  `ParticipantRatingRow`): aparece na página do evento quando ele está
+  `concluido` e o usuário fez check-in — lista os outros participantes
+  que também fizeram check-in.
+- **Denúncia e bloqueio** (`ReportMenu`): menu "..." na página do
+  evento.
+- **Captura de geolocalização na criação do evento**: botão "Usar
+  minha localização atual" no formulário de criação — sem isso, o
+  check-in geolocalizado nunca tinha coordenadas para validar contra.
+- **Layout mais próximo de redes sociais conhecidas** (Instagram):
+  cards do feed e de "Meus Eventos" ganharam capa em gradiente por
+  categoria com o medidor de quórum sobreposto no canto (como uma foto
+  de perfil sobre um story), e o carrossel de categorias não mostra
+  mais a barra de rolagem (`scrollbar-hide` + `snap-x`).
+
 ## O que fica como próximo passo (fora do MVP, conforme seção 7-8 do briefing)
 
 - **Modalidade Amigos/Híbrida**: o schema e o tipo já existem
   (`event_modality`), mas o fluxo de convite via grafo social não foi
   construído — hoje a tela de criação avisa que "Híbrida" funciona como
   "Estranhos" por enquanto.
-- **Geolocalização na criação do evento**: o formulário de criação
-  pede um endereço em texto, mas não captura coordenadas (mapa/GPS) —
-  por isso o check-in só fica disponível para eventos com
-  `geo_lat`/`geo_lng` preenchidos manualmente (ex.: direto no Supabase
-  Studio, por ora).
 - **Notificações push** (Web Push API): não implementado nesta rodada.
 - **Stories/Reels, Clubes recorrentes, Monetização**: fases 2-4 do
   roadmap do briefing, propositalmente fora do MVP.
-- **Code-splitting**: o bundle de produção ficou em ~530kB
+- **Code-splitting**: o bundle de produção ficou em ~550kB
   (aviso do Vite no build) — próximo passo natural é lazy-load das
   rotas com `React.lazy`, sem necessidade de refazer nada da
   arquitetura atual.
+
+## Correção pós-deploy: recursão infinita em RLS
+
+A política de SELECT de `commitments` continha uma subquery que
+consultava a própria tabela `commitments` (para checar "outros
+participantes do mesmo evento") — o Postgres não permite isso e gera
+"infinite recursion detected in policy", que o PostgREST expõe como
+erro 500. Como a política de `events` consulta `commitments`, criar/ler
+qualquer evento também era afetado.
+
+**Correção**: `is_event_participant()`, uma função `security definer`
+(dona `postgres`, isenta da própria RLS por padrão) faz essa checagem
+sem disparar a política de `commitments` recursivamente — o padrão
+documentado pelo Supabase para este tipo de caso. Ver
+`supabase/migrations/0002_fix_commitments_rls_recursion.sql` (para
+quem já rodou a `0001` original) — a `0001` já vem corrigida para
+instalações novas.
+
+## Correção pós-deploy #2: recursão cruzada entre `events` e `commitments`
+
+A correção anterior resolveu `commitments` consultando a si mesma, mas
+sobrou um ciclo de duas tabelas: a política de `events` consultava
+`commitments` diretamente, e a política de `commitments` consultava
+`events` diretamente de volta — o Postgres rejeita isso do mesmo jeito
+("infinite recursion detected in policy"), mesmo não sendo a mesma
+tabela se autorreferenciando.
+
+**Correção**: toda consulta cruzada entre `events`, `commitments` e
+`invites` dentro de políticas de RLS agora passa por funções
+`security definer` (`is_event_participant`, `is_event_creator`,
+`has_redeemed_invite`) em vez de subqueries diretas — isso quebra
+qualquer ciclo possível entre essas tabelas. Ver
+`supabase/migrations/0003_fix_events_commitments_rls_recursion.sql`
+(para quem já rodou `0001`/`0002`) — a `0001` já vem corrigida para
+instalações novas, sem precisar de nenhuma migração incremental.

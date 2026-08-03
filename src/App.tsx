@@ -3,6 +3,7 @@ import { useAuth } from "./application/context/AuthContext";
 import { AuthScreen } from "./presentation/screens/AuthScreen";
 import { DiscoveryFeedScreen } from "./presentation/screens/DiscoveryFeedScreen";
 import { EventDetailScreen } from "./presentation/screens/EventDetailScreen";
+import { EditEventScreen } from "./presentation/screens/EditEventScreen";
 import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
@@ -40,6 +41,14 @@ export default function App() {
           element={
             <RequireAuth>
               <EventDetailScreen />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/eventos/:eventId/editar"
+          element={
+            <RequireAuth>
+              <EditEventScreen />
             </RequireAuth>
           }
         />
