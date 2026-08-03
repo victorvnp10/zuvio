@@ -64,11 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // provedor por uma única vez — é a única chance de capturá-lo
         // e guardar com segurança (via Edge Function) para a
         // sincronização com o Google Calendar funcionar depois.
-        if (
-          event === "SIGNED_IN" &&
-          newSession.provider_token &&
-          newSession.user.app_metadata?.provider === "google"
-        ) {
+        // `app_metadata.provider` reflete o método ORIGINAL de cadastro
+        // da conta (ex.: "email", se a pessoa se cadastrou por e-mail e
+        // só depois vinculou o Google) — não é confiável para saber se
+        // ESTA sessão veio de um login OAuth. `provider_token` já é
+        // esse sinal por si só: só existe logo após um login OAuth,
+        // não importa qual foi o provedor original da conta.
+        if (event === "SIGNED_IN" && newSession.provider_token) {
           GoogleCalendarRepository.storeTokens(
             newSession.provider_token,
             newSession.provider_refresh_token ?? undefined,
