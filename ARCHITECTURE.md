@@ -294,3 +294,14 @@ padrão — precisa ser adicionada explicitamente à publicação
 sempre esteve correto, mas sem esse passo no banco ele nunca recebia
 nada — só uma recarga da página buscava o estado atual. Ver
 `supabase/migrations/0011_enable_realtime_chat.sql`.
+
+## Correção: chat invisível para o organizador
+
+O organizador nunca tem uma linha em `commitments` (não passa pelo
+fluxo de "comprometer-se" no próprio evento), e as políticas de RLS do
+chat exigiam justamente essa linha para liberar leitura/escrita — o
+chat ficava bloqueado e invisível para quem criou o evento, mesmo após
+o quórum ser atingido. Corrigido usando `is_event_creator` como
+condição alternativa (ver migração 0012), e a tela agora mostra o
+`ChatPanel` também quando `isCreator` é verdadeiro, não só quando há
+compromisso confirmado.

@@ -171,7 +171,7 @@ export function EventDetailScreen() {
           />
         )}
 
-        {chatUnlocked && isCommitted && eventId && <ChatPanel eventId={eventId} />}
+        {chatUnlocked && (isCommitted || isCreator) && eventId && <ChatPanel eventId={eventId} />}
 
         {chatUnlocked && !isCommitted && !isCreator && (
           <p className="text-center text-sm text-ink-500">
