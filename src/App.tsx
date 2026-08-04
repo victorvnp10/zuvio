@@ -9,6 +9,7 @@ import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
 import { FriendsScreen } from "./presentation/screens/FriendsScreen";
+import { InviteRedeemScreen, PENDING_INVITE_KEY } from "./presentation/screens/InviteRedeemScreen";
 import { isProfileComplete } from "./domain/valueObjects/Eligibility";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,14 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     return <Navigate to="/completar-perfil" replace />;
   }
 
+  // Se a pessoa chegou aqui vindo de um link de convite (inclusive via
+  // login com Google, que não passa pelo formulário de e-mail/senha),
+  // manda para a tela que resgata o convite antes de continuar.
+  const pendingInviteCode = sessionStorage.getItem(PENDING_INVITE_KEY);
+  if (pendingInviteCode && !location.pathname.startsWith("/convite/")) {
+    return <Navigate to={`/convite/${pendingInviteCode}`} replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -44,6 +53,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/entrar" element={<AuthScreen />} />
+        <Route path="/convite/:codigo" element={<InviteRedeemScreen />} />
         <Route
           path="/completar-perfil"
           element={

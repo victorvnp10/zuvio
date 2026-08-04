@@ -103,6 +103,22 @@ export const FriendsRepository = {
     return (data ?? []).map((row) => row.friend_user_id);
   },
 
+  /** Membros de vários grupos de uma vez — usado no seletor de convite. */
+  async listMembersForGroups(groupIds: string[]): Promise<Record<string, string[]>> {
+    if (groupIds.length === 0) return {};
+    const { data, error } = await supabase
+      .from("friend_group_members")
+      .select("group_id, friend_user_id")
+      .in("group_id", groupIds);
+    if (error) throw new Error(error.message);
+
+    const byGroup: Record<string, string[]> = {};
+    for (const row of data ?? []) {
+      byGroup[row.group_id] = [...(byGroup[row.group_id] ?? []), row.friend_user_id];
+    }
+    return byGroup;
+  },
+
   async addMemberToGroup(groupId: string, friendUserId: string): Promise<void> {
     const { error } = await supabase
       .from("friend_group_members")

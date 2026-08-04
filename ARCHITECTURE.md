@@ -339,3 +339,77 @@ públicas ficam visíveis para qualquer autenticado. Upload usa um
 bucket novo do Supabase Storage (`event-media`, público) — a nota de
 segurança sobre isso (nomes de arquivo não adivinháveis, mas não
 criptograficamente privados) está comentada na migração 0013.
+
+## Excluir vs. Cancelar, convite direcionado por amigos/grupos, link de convite
+
+### Excluir vs. Cancelar
+
+Antes do quórum ser atingido (`status = 'aberto'`), o organizador pode
+**excluir de verdade** a proposta — ninguém "de fora" ainda depende
+dela como compromisso firmado. Depois de atingido o quórum
+(`quorum_atingido`/`fechado`), só **cancelar** (soft, como já existia)
+continua disponível. Ver migração `0014` (política de DELETE
+condicional) e os métodos `EventsRepository.remove()` (novo, hard
+delete) vs. `cancel()` (já existia).
+
+### Convite direcionado (Amigos/Restrita) + link compartilhável
+
+`FriendGroupSelector` (reaproveitado nos dois casos) mostra grupos e
+amigos individuais para selecionar — marcar um grupo seleciona todos
+os membros dele de uma vez. Na criação do evento, os IDs selecionados
+viram `invites.usado_por` já pré-preenchido (acesso garantido na hora,
+sem precisar de link) — o mesmo registro de convite também expõe um
+`codigo` compartilhável como link (`/convite/:codigo`), útil
+especialmente para "Restrita", onde o organizador pode mandar esse
+link no WhatsApp para qualquer um, mesmo quem ainda não tem conta.
+
+`InviteRedeemScreen` cobre os dois casos: se a pessoa não está
+logada, guarda o código em `sessionStorage` e manda para
+`/entrar`; se já está logada, resgata na hora. O caso de login via
+Google (que não passa pelo formulário de e-mail/senha) é coberto
+centralmente em `RequireAuth` (`App.tsx`), que também checa esse
+código pendente antes de liberar qualquer rota protegida.
+
+## Banho de loja: feed em formato Instagram, navegação, compressão de imagem
+
+### Feed (`EventPostCard.tsx`)
+
+Cada evento vira um "post": cabeçalho com avatar do organizador,
+imagem cheia (capa ou gradiente da categoria), linha de ações, pilha
+de avatares de confirmados, e legenda (título + descrição). A
+adaptação deliberada do gesto do Instagram: o ícone de coração não é
+decorativo — tocar nele chama `useQuickCommit`, que confirma ou
+cancela presença direto do feed (via as mesmas funções RPC de sempre),
+sem precisar abrir o evento. O organizador nunca vê esse botão ativo
+no próprio evento (mesma regra que já existia na página do evento).
+O ícone de comentário abre a página do evento; o de compartilhar usa
+a Web Share API nativa (com fallback para copiar o link).
+
+As categorias no topo viraram bolhas circulares (visual de "stories"),
+cada uma com o gradiente/emoji da categoria e um anel de destaque
+quando selecionada.
+
+### Navegação inferior (`BottomNav.tsx`)
+
+Reduzida a 5 posições sem rótulo de texto, no padrão exato do
+Instagram: início, amigos, criar (com o "+" numa caixa com contorno,
+centralizado), meus eventos, e — a marca registrada do padrão — o
+último ícone é a própria **foto de perfil** da pessoa (componente
+`Avatar.tsx`, novo e reutilizado em várias telas), não um ícone
+genérico de usuário.
+
+### Foto de perfil
+
+Nova (`useProfilePhoto`, upload na própria tela de Perfil) — sem ela,
+o último ícone da navegação não teria o que mostrar além da inicial
+do nome.
+
+### Compressão de imagem (`shared/imageCompression.ts`)
+
+Toda imagem que passa por `MediaStorageRepository.uploadFile` (capa do
+evento, fotos de participantes, foto de perfil) é redimensionada para
+no máximo 1280px no maior lado e reencodada como JPEG a 75% de
+qualidade — o mesmo que o Instagram faz antes do upload. GIFs
+animados são enviados sem alteração (passar por canvas quebraria a
+animação), e se a versão comprimida sair maior que a original (raro,
+em fotos já pequenas), o arquivo original é usado.

@@ -1,13 +1,16 @@
 import { supabase } from "../client";
+import { compressImage } from "../../../shared/imageCompression";
 
 const BUCKET = "event-media";
 
 export const MediaStorageRepository = {
-  /** Envia um arquivo e devolve a URL pública para salvar em `events.capa_url` ou `event_photos.foto_url`. */
+  /** Envia um arquivo (comprimindo antes, se for imagem) e devolve a URL pública. */
   async uploadFile(path: string, file: File): Promise<string> {
-    const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+    const compressed = await compressImage(file);
+
+    const { error } = await supabase.storage.from(BUCKET).upload(path, compressed, {
       upsert: true,
-      contentType: file.type,
+      contentType: compressed.type,
     });
     if (error) throw new Error(error.message);
 

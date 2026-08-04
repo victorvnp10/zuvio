@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, MapPin, CalendarDays, Users, Pencil } from "lucide-react";
+import { ArrowLeft, MapPin, CalendarDays, Users, Pencil, Trash2, XCircle } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
+import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { useAuth } from "../../application/context/AuthContext";
 import { QuorumMeter } from "../components/QuorumMeter";
 import { CategoryBadge } from "../components/CategoryBadge";
@@ -12,6 +14,7 @@ import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
 import { CollaborativeListSection } from "../components/CollaborativeListSection";
 import { EventPhotosSection } from "../components/EventPhotosSection";
+import { InviteLinkSection } from "../components/InviteLinkSection";
 import { CATEGORY_COVER } from "../components/CategoryBadge";
 import { BottomNav } from "../layout/BottomNav";
 import { isChatUnlocked } from "../../domain/services/QuorumService";
@@ -20,6 +23,8 @@ export function EventDetailScreen() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { cancelEvent, deleteEvent, isSubmitting: isManaging } = useManageMyEvent();
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
   const {
     event,
     isLoading,
@@ -64,6 +69,15 @@ export function EventDetailScreen() {
             aria-label="Editar"
           >
             <Pencil size={18} />
+          </button>
+        )}
+        {isCreator && !isCancelled && (
+          <button
+            onClick={() => setConfirmingRemoval(true)}
+            className="p-2 text-ink-300 hover:text-red-400"
+            aria-label={quorum.quorumAtingido ? "Cancelar evento" : "Excluir evento"}
+          >
+            {quorum.quorumAtingido ? <XCircle size={18} /> : <Trash2 size={18} />}
           </button>
         )}
         <ReportMenu eventId={event.id} criadorId={event.criadorId} />
@@ -169,6 +183,10 @@ export function EventDetailScreen() {
           <RatingSection eventId={event.id} commitments={commitments} currentUserId={user.id} />
         )}
 
+        {isCreator && event.modalidade === "restrita" && eventId && (
+          <InviteLinkSection eventId={eventId} />
+        )}
+
         {!isCancelled && event.tipoEvento !== "livre" && eventId && (
           <EventCostSection
             event={event}
@@ -200,6 +218,42 @@ export function EventDetailScreen() {
           </p>
         )}
       </main>
+
+      {confirmingRemoval && (
+        <div className="fixed inset-0 bg-ink-950/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-ink-800 border border-ink-700 rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <h3 className="font-display font-semibold text-lg">
+              {quorum.quorumAtingido ? "Cancelar esta proposta?" : "Excluir esta proposta?"}
+            </h3>
+            <p className="text-sm text-ink-400">
+              {quorum.quorumAtingido
+                ? "Quem já confirmou presença vai ver que o evento foi cancelado. Essa ação não pode ser desfeita."
+                : "O quórum ainda não foi atingido — a proposta será apagada de vez, sem deixar rastro."}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmingRemoval(false)}
+                className="flex-1 border border-ink-600 text-ink-300 font-semibold py-2.5 rounded-xl text-sm"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={async () => {
+                  const ok = quorum.quorumAtingido
+                    ? await cancelEvent(event.id)
+                    : await deleteEvent(event.id);
+                  setConfirmingRemoval(false);
+                  if (ok) navigate("/meus-eventos");
+                }}
+                disabled={isManaging}
+                className="flex-1 bg-red-500 disabled:opacity-50 text-ink-950 font-semibold py-2.5 rounded-xl text-sm"
+              >
+                {isManaging ? "Aguarde..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

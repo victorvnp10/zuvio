@@ -26,6 +26,18 @@ export const CommitmentsRepository = {
     return (data ?? []).map(toCommitment);
   },
 
+  /** Todos os compromissos confirmados de um conjunto de eventos, sem filtro de usuário — usado para a pilha de avatares no feed. */
+  async listForEvents(eventIds: string[]): Promise<Commitment[]> {
+    if (eventIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from("commitments")
+      .select("*")
+      .in("event_id", eventIds)
+      .in("status", ["confirmado", "check-in"]);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toCommitment);
+  },
+
   /** Usado para descobrir quais amigos já confirmaram presença num conjunto de eventos (ranking do feed). */
   async listForEventsAndUsers(eventIds: string[], userIds: string[]): Promise<Commitment[]> {
     if (eventIds.length === 0 || userIds.length === 0) return [];

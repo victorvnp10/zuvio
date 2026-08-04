@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { CATEGORY_OPTIONS } from "../components/CategoryBadge";
+import { FriendGroupSelector } from "../components/FriendGroupSelector";
 import { useCreateEvent } from "../../application/hooks/useCreateEvent";
+import { useAuth } from "../../application/context/AuthContext";
+import { InvitesRepository } from "../../infrastructure/supabase/repositories/InvitesRepository";
 import type {
   EventCategory,
   EventModality,
@@ -51,6 +54,8 @@ export function CreateEventScreen() {
   const navigate = useNavigate();
   const { createEvent, isSubmitting, error } = useCreateEvent();
   const [step, setStep] = useState(0);
+  const { user } = useAuth();
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
 
   const [categoria, setCategoria] = useState<EventCategory>("esporte");
   const [modalidade, setModalidade] = useState<EventModality>("estranhos");
@@ -101,6 +106,23 @@ export function CreateEventScreen() {
           ? valorTotalRateio
           : null,
     });
+
+    if (event && (modalidade === "amigos" || modalidade === "restrita") && user) {
+      // O mesmo convite serve para os amigos selecionados agora (já
+      // entram com acesso garantido) e, no caso de "restrita", também
+      // como link compartilhável depois (mesmo código, qualquer um que
+      // resgatar é adicionado à mesma lista).
+      await InvitesRepository.create({
+        eventId: event.id,
+        criadoPor: user.id,
+        uso: "multiplo",
+        expiraEmISO: null,
+        usadoPorDireto: selectedFriendIds,
+      }).catch((err) => {
+        console.error("Não foi possível criar o convite:", err);
+      });
+    }
+
     if (event) navigate(`/eventos/${event.id}`);
   };
 
@@ -178,13 +200,26 @@ export function CreateEventScreen() {
               ))}
             </div>
             {modalidade === "hibrida" && (
-              <p className="text-xs text-amber-500 mt-2">
-                Modalidade Híbrida ainda não tem o fluxo completo de convite de amigos
-                implementado nesta versão — a proposta será criada, mas funciona como
-                "Aberta a estranhos" por enquanto.
+              <p className="text-xs text-ink-500 mt-2">
+                Todos estão convidados — é um evento público, igual "Aberta a estranhos", com
+                a diferença de que amigos convidados diretamente também aparecem priorizados.
               </p>
             )}
           </div>
+
+          {(modalidade === "amigos" || modalidade === "restrita") && (
+            <div className="bg-ink-800/40 border border-ink-700 rounded-xl p-4">
+              <p className="text-sm font-medium text-ink-200 mb-3">
+                {modalidade === "restrita"
+                  ? "Convidar amigos diretamente (opcional — você também recebe um link para compartilhar depois de criar)"
+                  : "Quem pode ver e participar"}
+              </p>
+              <FriendGroupSelector
+                selectedFriendIds={selectedFriendIds}
+                onChange={setSelectedFriendIds}
+              />
+            </div>
+          )}
         </div>
       )}
 

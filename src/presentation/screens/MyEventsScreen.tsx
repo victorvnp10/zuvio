@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Pencil, XCircle } from "lucide-react";
+import { Pencil, XCircle, Trash2 } from "lucide-react";
 import { AppShell } from "../layout/AppShell";
 import { useMyEvents } from "../../application/hooks/useMyEvents";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
@@ -17,17 +17,23 @@ function EventCard({
   onOpen,
   onEdit,
   onCancel,
+  onDelete,
   canManage,
 }: {
   event: EventProposal;
   onOpen: () => void;
   onEdit?: () => void;
   onCancel?: () => void;
+  onDelete?: () => void;
   canManage?: boolean;
 }) {
   const quorum = summarizeQuorum(event);
   const cover = CATEGORY_COVER[event.categoria];
   const isCancelled = event.status === "cancelado";
+  // Antes do quórum ser atingido, ninguém "de fora" depende do evento
+  // como um compromisso firmado — dá para excluir de verdade. Depois
+  // disso, só cancelar (mantém o histórico para quem já confirmou).
+  const canHardDelete = event.status === "aberto";
 
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden">
@@ -70,12 +76,21 @@ function EventCard({
             <Pencil size={14} /> Editar
           </button>
           <div className="w-px bg-ink-700" />
-          <button
-            onClick={onCancel}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm text-red-400 hover:bg-ink-700/50 transition-colors"
-          >
-            <XCircle size={14} /> Cancelar
-          </button>
+          {canHardDelete ? (
+            <button
+              onClick={onDelete}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm text-red-400 hover:bg-ink-700/50 transition-colors"
+            >
+              <Trash2 size={14} /> Excluir
+            </button>
+          ) : (
+            <button
+              onClick={onCancel}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm text-red-400 hover:bg-ink-700/50 transition-colors"
+            >
+              <XCircle size={14} /> Cancelar
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -86,13 +101,18 @@ export function MyEventsScreen() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useMyEvents();
-  const { cancelEvent, isSubmitting } = useManageMyEvent();
-  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const { cancelEvent, deleteEvent, isSubmitting } = useManageMyEvent();
+  const [pendingAction, setPendingAction] = useState<{ id: string; type: "cancel" | "delete" } | null>(
+    null
+  );
 
-  const handleConfirmCancel = async () => {
-    if (!pendingCancelId) return;
-    const ok = await cancelEvent(pendingCancelId);
-    setPendingCancelId(null);
+  const handleConfirm = async () => {
+    if (!pendingAction) return;
+    const ok =
+      pendingAction.type === "delete"
+        ? await deleteEvent(pendingAction.id)
+        : await cancelEvent(pendingAction.id);
+    setPendingAction(null);
     if (ok) {
       queryClient.invalidateQueries({ queryKey: ["my-events"] });
     }
@@ -119,7 +139,8 @@ export function MyEventsScreen() {
                   canManage
                   onOpen={() => navigate(`/eventos/${event.id}`)}
                   onEdit={() => navigate(`/eventos/${event.id}/editar`)}
-                  onCancel={() => setPendingCancelId(event.id)}
+                  onCancel={() => setPendingAction({ id: event.id, type: "cancel" })}
+                  onDelete={() => setPendingAction({ id: event.id, type: "delete" })}
                 />
               ))}
             </div>
@@ -141,27 +162,30 @@ export function MyEventsScreen() {
         </div>
       )}
 
-      {pendingCancelId && (
+      {pendingAction && (
         <div className="fixed inset-0 bg-ink-950/80 flex items-center justify-center p-4 z-50">
           <div className="bg-ink-800 border border-ink-700 rounded-2xl p-6 max-w-sm w-full space-y-4">
-            <h3 className="font-display font-semibold text-lg">Cancelar esta proposta?</h3>
+            <h3 className="font-display font-semibold text-lg">
+              {pendingAction.type === "delete" ? "Excluir esta proposta?" : "Cancelar esta proposta?"}
+            </h3>
             <p className="text-sm text-ink-400">
-              Quem já confirmou presença vai ver que o evento foi cancelado. Essa ação não
-              pode ser desfeita.
+              {pendingAction.type === "delete"
+                ? "O quórum ainda não foi atingido — a proposta será apagada de vez, sem deixar rastro."
+                : "Quem já confirmou presença vai ver que o evento foi cancelado. Essa ação não pode ser desfeita."}
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => setPendingCancelId(null)}
+                onClick={() => setPendingAction(null)}
                 className="flex-1 border border-ink-600 text-ink-300 font-semibold py-2.5 rounded-xl text-sm"
               >
                 Voltar
               </button>
               <button
-                onClick={handleConfirmCancel}
+                onClick={handleConfirm}
                 disabled={isSubmitting}
                 className="flex-1 bg-red-500 disabled:opacity-50 text-ink-950 font-semibold py-2.5 rounded-xl text-sm"
               >
-                {isSubmitting ? "Cancelando..." : "Sim, cancelar"}
+                {isSubmitting ? "Aguarde..." : pendingAction.type === "delete" ? "Sim, excluir" : "Sim, cancelar"}
               </button>
             </div>
           </div>

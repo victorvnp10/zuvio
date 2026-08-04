@@ -34,7 +34,8 @@ export function AuthScreen() {
       } else {
         await signUp({ email, password, nome, dataNascimentoISO: dataNascimento, genero, localizacaoBase });
       }
-      navigate("/");
+      const pendingInviteCode = sessionStorage.getItem("zuvio:pending_invite_code");
+      navigate(pendingInviteCode ? `/convite/${pendingInviteCode}` : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
     } finally {

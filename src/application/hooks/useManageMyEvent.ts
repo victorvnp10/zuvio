@@ -46,5 +46,24 @@ export function useManageMyEvent() {
     }
   }, []);
 
-  return { updateEvent, cancelEvent, isSubmitting, error };
+  /** Exclusão de verdade — só permitido pela RLS enquanto o evento
+   * ainda não atingiu o quórum (`status = 'aberto'`). */
+  const deleteEvent = useCallback(async (eventId: string): Promise<boolean> => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await EventsRepository.remove(eventId);
+      GoogleCalendarRepository.removeOrganizerEvent(eventId).catch((err) => {
+        console.error("Não foi possível remover o evento do Google Calendar:", err);
+      });
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir a proposta.");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  return { updateEvent, cancelEvent, deleteEvent, isSubmitting, error };
 }

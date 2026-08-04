@@ -170,6 +170,7 @@ export interface Database {
           criado_por: string;
           uso: "unico" | "multiplo";
           expira_em: string | null;
+          usado_por?: string[];
         };
       };
       reports: {

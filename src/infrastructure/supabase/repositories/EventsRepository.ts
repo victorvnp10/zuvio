@@ -173,6 +173,16 @@ export const EventsRepository = {
     if (error) throw new Error(error.message);
   },
 
+  /**
+   * Exclusão de verdade (apaga a linha, cascade em commitments/chat/
+   * etc.) — só permitido pela RLS enquanto o evento ainda não atingiu
+   * o quórum (`status = 'aberto'`). Depois disso, use `cancel()`.
+   */
+  async remove(eventId: string): Promise<void> {
+    const { error } = await supabase.from("events").delete().eq("id", eventId);
+    if (error) throw new Error(error.message);
+  },
+
   /** Assina mudanças em tempo real num evento específico (placar de vagas/status). */
   subscribeToEvent(eventId: string, onChange: (event: EventProposal) => void) {
     const channel = supabase
