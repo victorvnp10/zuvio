@@ -122,6 +122,28 @@ export interface Database {
           visibilidade: "evento" | "publica";
         };
       };
+      event_likes: {
+        Row: { event_id: string; user_id: string; criado_em: string };
+        Insert: { event_id: string; user_id: string };
+      };
+      event_photo_likes: {
+        Row: { photo_id: string; user_id: string; criado_em: string };
+        Insert: { photo_id: string; user_id: string };
+      };
+      event_photo_comments: {
+        Row: {
+          id: string;
+          photo_id: string;
+          autor_id: string;
+          texto: string;
+          criado_em: string;
+        };
+        Insert: {
+          photo_id: string;
+          autor_id: string;
+          texto: string;
+        };
+      };
       chat_messages: {
         Row: {
           id: string;

@@ -413,3 +413,35 @@ qualidade — o mesmo que o Instagram faz antes do upload. GIFs
 animados são enviados sem alteração (passar por canvas quebraria a
 animação), e se a versão comprimida sair maior que a original (raro,
 em fotos já pequenas), o arquivo original é usado.
+
+## Curtir separado de Participar, conceito do feed na página do evento
+
+### Curtir vs. Participar (correção de semântica)
+
+Antes, o coração fazia dupla função como "confirmar presença" — mas
+curtir é engajamento leve, participar é o compromisso real do produto.
+Agora são duas coisas de verdade: `event_likes` (nova tabela, migração
+0015) é uma curtida genuína, e um botão separado e óbvio
+("Participar" / "Participando ✓", pílula colorida) faz a ação real de
+compromisso — o coração nunca mais acrequest para o RPC de quórum.
+
+Mesma separação em fotos: `event_photo_likes` e `event_photo_comments`
+(também na 0015) dão a cada foto postada no evento sua própria curtida
+e comentários, no mesmo padrão do Instagram.
+
+### Página do evento no mesmo conceito do feed
+
+Imagem com o anel de quórum sobreposto no canto (mesmo `QuorumMeter`
+usado no card do feed), linha de ações (curtir/comentar/compartilhar/
+participar), contagem de confirmados — e, abaixo disso, o mesmo bloco
+de detalhes de sempre (descrição, data, local), custo, lista
+colaborativa. O chat foi movido para **antes** das fotos (é o que
+ajuda a organizar o evento de verdade, faz mais sentido ficar mais
+acessível que a galeria de fotos).
+
+### Fotos com curtir/comentar
+
+Cada foto agora é um mini-post: avatar de quem postou, curtidas,
+comentários expansíveis com um campo pra escrever — mesmo padrão de
+interação do Instagram, restrito pela mesma regra de visibilidade
+(`evento` vs `pública`) que já existia.

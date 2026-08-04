@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Heart, MessageCircle, Share2, MapPin } from "lucide-react";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
+import { useEventLikeToggle } from "../../application/hooks/useEventLikeToggle";
 import { Avatar } from "./Avatar";
+import { QuorumMeter } from "./QuorumMeter";
 import { CATEGORY_COVER } from "./CategoryBadge";
 import type { EventProposal } from "../../domain/entities/types";
 
@@ -33,6 +36,8 @@ export function EventPostCard({
   participantIds,
   isCommitted,
   isOwnEvent,
+  likerIds,
+  currentUserId,
   onQuickCommit,
   onQuickCancel,
   isPending,
@@ -41,6 +46,8 @@ export function EventPostCard({
   participantIds: string[];
   isCommitted: boolean;
   isOwnEvent: boolean;
+  likerIds: string[];
+  currentUserId: string;
   myCommitmentId?: string;
   onQuickCommit: () => void;
   onQuickCancel: () => void;
@@ -50,6 +57,23 @@ export function EventPostCard({
   const { data: organizador } = usePublicProfile(event.criadorId);
   const quorum = summarizeQuorum(event);
   const cover = CATEGORY_COVER[event.categoria];
+
+  const [isLiked, setIsLiked] = useState(likerIds.includes(currentUserId));
+  const [likeCount, setLikeCount] = useState(likerIds.length);
+  const { toggle: toggleLike, isPending: isLikePending } = useEventLikeToggle(
+    event.id,
+    currentUserId
+  );
+
+  const handleLike = async () => {
+    const wasLiked = isLiked;
+    setIsLiked(!wasLiked);
+    setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
+    await toggleLike(wasLiked).catch(() => {
+      setIsLiked(wasLiked);
+      setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+    });
+  };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,54 +87,48 @@ export function EventPostCard({
 
   return (
     <article className="bg-ink-900 border-b border-ink-800 pb-3">
+      {/* Título em destaque, no topo — é o "assunto" do post */}
       <button
         onClick={() => navigate(`/eventos/${event.id}`)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left"
+        className="w-full text-left px-3 pt-3 pb-2"
       >
-        <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={32} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-ink-100 truncate">
-            {organizador?.nome ?? "..."}
-          </p>
-          <p className="text-xs text-ink-500 truncate">{event.local.endereco}</p>
+        <h2 className="font-display font-semibold text-lg text-ink-100 leading-snug">
+          {event.titulo}
+        </h2>
+      </button>
+
+      {/* Imagem, com o anel de quórum sobreposto no canto */}
+      <div className="relative">
+        <button
+          onClick={() => navigate(`/eventos/${event.id}`)}
+          className={`w-full aspect-square flex items-center justify-center ${
+            event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
+          }`}
+          style={
+            event.capaUrl
+              ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : undefined
+          }
+        >
+          {!event.capaUrl && <span className="text-7xl opacity-90">{cover.emoji}</span>}
+        </button>
+        <div className="absolute top-3 left-3 bg-ink-900/70 backdrop-blur-sm rounded-full p-1">
+          <QuorumMeter quorum={quorum} size={44} />
         </div>
         {event.tipoEvento !== "livre" && (
-          <span className="text-xs font-semibold text-amber-500 shrink-0">
-            {event.tipoEvento === "pago" ? "💰" : "🍲"}
+          <span className="absolute top-3 right-3 text-xs font-semibold bg-ink-900/70 backdrop-blur-sm text-amber-500 px-2 py-1 rounded-full">
+            {event.tipoEvento === "pago" ? "💰 Pago" : "🍲 Colaborativo"}
           </span>
         )}
-      </button>
+      </div>
 
-      <button
-        onClick={() => navigate(`/eventos/${event.id}`)}
-        className={`w-full aspect-square flex items-center justify-center ${
-          event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
-        }`}
-        style={
-          event.capaUrl
-            ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-            : undefined
-        }
-      >
-        {!event.capaUrl && <span className="text-7xl opacity-90">{cover.emoji}</span>}
-      </button>
-
+      {/* Ações: curtir (de verdade), comentar, compartilhar — e o botão de Participar, separado e óbvio */}
       <div className="flex items-center gap-4 px-3 pt-2.5">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isCommitted) onQuickCancel();
-            else onQuickCommit();
-          }}
-          disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
-          aria-label={isCommitted ? "Cancelar presença" : "Comprometer-se"}
-          className={isOwnEvent ? "opacity-30 cursor-default" : ""}
-          title={isOwnEvent ? "Você é o organizador deste evento" : undefined}
-        >
+        <button onClick={handleLike} disabled={isLikePending} aria-label={isLiked ? "Descurtir" : "Curtir"}>
           <Heart
             size={26}
             strokeWidth={1.8}
-            className={isCommitted ? "fill-coral-500 text-coral-500" : "text-ink-200"}
+            className={isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"}
           />
         </button>
         <button onClick={() => navigate(`/eventos/${event.id}`)} aria-label="Comentar">
@@ -119,8 +137,33 @@ export function EventPostCard({
         <button onClick={handleShare} aria-label="Compartilhar">
           <Share2 size={24} strokeWidth={1.8} className="text-ink-200" />
         </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isCommitted) onQuickCancel();
+            else onQuickCommit();
+          }}
+          disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
+          className={`ml-auto text-sm font-semibold px-4 py-1.5 rounded-full transition-colors ${
+            isOwnEvent
+              ? "bg-ink-800 text-ink-500 cursor-default"
+              : isCommitted
+              ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
+              : "bg-coral-500 text-ink-950 disabled:opacity-50"
+          }`}
+        >
+          {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
+        </button>
       </div>
 
+      {likeCount > 0 && (
+        <p className="text-sm font-semibold text-ink-200 px-3 pt-2">
+          {likeCount} curtida{likeCount === 1 ? "" : "s"}
+        </p>
+      )}
+
+      {/* Confirmados / quórum */}
       <div className="flex items-center gap-2 px-3 pt-2">
         {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
         <p className="text-sm text-ink-200">
@@ -134,15 +177,19 @@ export function EventPostCard({
         </p>
       </div>
 
-      <div className="px-3 pt-1.5 space-y-0.5">
-        <p className="text-sm text-ink-100">
-          <span className="font-semibold">{event.titulo}</span>{" "}
-          <span className="text-ink-300">{event.descricao}</span>
-        </p>
-        <p className="text-xs text-ink-500 flex items-center gap-1 pt-0.5">
+      {/* Legenda + anfitrião, embaixo */}
+      <div className="px-3 pt-1.5 space-y-1.5">
+        <p className="text-sm text-ink-300">{event.descricao}</p>
+        <p className="text-xs text-ink-500 flex items-center gap-1">
           <MapPin size={11} />
           {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })}
         </p>
+        <div className="flex items-center gap-1.5 pt-1">
+          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={18} />
+          <span className="text-xs text-ink-500">
+            Organizado por <span className="text-ink-300 font-medium">{organizador?.nome ?? "..."}</span>
+          </span>
+        </div>
       </div>
     </article>
   );

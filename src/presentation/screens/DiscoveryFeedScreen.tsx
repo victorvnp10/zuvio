@@ -4,6 +4,7 @@ import { useDiscoveryFeed } from "../../application/hooks/useDiscoveryFeed";
 import { useQuickCommit } from "../../application/hooks/useQuickCommit";
 import { useAuth } from "../../application/context/AuthContext";
 import { CommitmentsRepository } from "../../infrastructure/supabase/repositories/CommitmentsRepository";
+import { EventLikesRepository } from "../../infrastructure/supabase/repositories/EventLikesRepository";
 import { EventPostCard } from "../components/EventPostCard";
 import { CATEGORY_OPTIONS, CATEGORY_COVER } from "../components/CategoryBadge";
 import { BottomNav } from "../layout/BottomNav";
@@ -23,6 +24,12 @@ export function DiscoveryFeedScreen() {
     enabled: eventIds.length > 0,
   });
 
+  const { data: allLikes } = useQuery({
+    queryKey: ["feed-likes", eventIds],
+    queryFn: () => EventLikesRepository.listForEvents(eventIds),
+    enabled: eventIds.length > 0,
+  });
+
   const { data: myCommitments } = useQuery({
     queryKey: ["my-commitments", user?.id],
     queryFn: () => CommitmentsRepository.listMine(user!.id),
@@ -36,6 +43,14 @@ export function DiscoveryFeedScreen() {
     }
     return map;
   }, [allParticipants]);
+
+  const likesByEvent = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const l of allLikes ?? []) {
+      map.set(l.eventId, [...(map.get(l.eventId) ?? []), l.userId]);
+    }
+    return map;
+  }, [allLikes]);
 
   const myCommitmentByEvent = useMemo(() => {
     const map = new Map<string, string>();
@@ -108,6 +123,8 @@ export function DiscoveryFeedScreen() {
             key={event.id}
             event={event}
             participantIds={participantsByEvent.get(event.id) ?? []}
+            likerIds={likesByEvent.get(event.id) ?? []}
+            currentUserId={user!.id}
             isCommitted={myCommitmentByEvent.has(event.id)}
             isOwnEvent={event.criadorId === user?.id}
             myCommitmentId={myCommitmentByEvent.get(event.id)}

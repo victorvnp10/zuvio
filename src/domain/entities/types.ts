@@ -127,6 +127,14 @@ export interface EventPhoto {
   criadoEm: string;
 }
 
+export interface PhotoComment {
+  id: string;
+  photoId: string;
+  autorId: string;
+  texto: string;
+  criadoEm: string;
+}
+
 export interface Commitment {
   id: string;
   eventId: string;
