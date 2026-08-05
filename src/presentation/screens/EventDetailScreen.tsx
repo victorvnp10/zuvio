@@ -27,6 +27,7 @@ import { useCategories, findCategory } from "../../application/hooks/useCategori
 import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
 import { PresenceCelebration } from "../components/PresenceCelebration";
+import { MapLinksRow } from "../components/MapLinksRow";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { ChatPanel } from "../components/ChatPanel";
 import { AnnouncementsSection } from "../components/AnnouncementsSection";
@@ -327,6 +328,7 @@ export function EventDetailScreen() {
               {event.local.endereco}
             </span>
           </div>
+          <MapLinksRow local={event.local} />
         </div>
 
         <div className="mx-4 space-y-4" id="comentarios">
