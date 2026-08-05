@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Pencil } from "lucide-react";
 import { AppShell } from "../layout/AppShell";
 import { AdminRepository } from "../../infrastructure/supabase/repositories/AdminRepository";
 import { useAdminCategories } from "../../application/hooks/useAdminCategories";
+import type { Category } from "../../domain/entities/types";
 
 /** Conjunto curado — cobre os temas mais comuns de evento sem virar um
  * seletor de emoji genérico (a categoria é sobre o tipo de atividade,
@@ -154,11 +156,76 @@ function StatsSection() {
   );
 }
 
+function EditCategoryForm({
+  category,
+  onSave,
+  onCancel,
+  isSubmitting,
+}: {
+  category: Category;
+  onSave: (input: { nome: string; emoji: string; cor: string }) => Promise<boolean>;
+  onCancel: () => void;
+  isSubmitting: boolean;
+}) {
+  const [nome, setNome] = useState(category.nome);
+  const [emoji, setEmoji] = useState(category.emoji);
+  const [cor, setCor] = useState(category.cor);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const ok = await onSave({ nome, emoji, cor });
+    if (ok) onCancel();
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="bg-ink-800/60 border border-coral-500/50 rounded-xl p-3 space-y-3"
+    >
+      <div className="flex gap-2">
+        <IconPicker value={emoji} onChange={setEmoji} />
+        <input
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+          className="flex-1 bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
+        />
+        <input
+          type="color"
+          value={cor}
+          onChange={(e) => setCor(e.target.value)}
+          className="w-12 h-12 bg-ink-900 border border-ink-700 rounded-xl p-1 cursor-pointer"
+          aria-label="Cor"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 border border-ink-600 text-ink-300 font-semibold py-2 rounded-xl text-sm"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting || !nome.trim()}
+          className="flex-1 bg-coral-500 hover:bg-coral-600 disabled:opacity-50 text-ink-950 font-semibold py-2 rounded-xl text-sm"
+        >
+          {isSubmitting ? "Salvando..." : "Salvar"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function CategoriesSection() {
-  const { data: categories, isLoading, createCategory, setAtivo, isSubmitting, error } = useAdminCategories();
+  const { data: categories, isLoading, createCategory, setAtivo, updateCategory, isSubmitting, error } =
+    useAdminCategories();
   const [nome, setNome] = useState("");
   const [emoji, setEmoji] = useState(ICON_OPTIONS[0]);
   const [cor, setCor] = useState("#12E0B2");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,36 +245,54 @@ function CategoriesSection() {
       {isLoading && <p className="text-sm text-ink-400">Carregando...</p>}
 
       <div className="space-y-2">
-        {(categories ?? []).map((cat) => (
-          <div
-            key={cat.id}
-            className={`flex items-center gap-3 bg-ink-800/60 border border-ink-700 rounded-xl p-3 ${
-              !cat.ativo ? "opacity-50" : ""
-            }`}
-          >
-            <span
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"
-              style={{ backgroundColor: cat.cor }}
-            >
-              {cat.emoji}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-ink-100 truncate">{cat.nome}</p>
-              <p className="text-[11px] text-ink-500">{cat.id}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAtivo(cat.id, !cat.ativo)}
-              className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                cat.ativo
-                  ? "border-ink-700 text-ink-400 hover:text-red-400 hover:border-red-500/50"
-                  : "border-quorum-500/50 text-quorum-500"
+        {(categories ?? []).map((cat) =>
+          editingId === cat.id ? (
+            <EditCategoryForm
+              key={cat.id}
+              category={cat}
+              isSubmitting={isSubmitting}
+              onCancel={() => setEditingId(null)}
+              onSave={(input) => updateCategory(cat.id, input)}
+            />
+          ) : (
+            <div
+              key={cat.id}
+              className={`flex items-center gap-3 bg-ink-800/60 border border-ink-700 rounded-xl p-3 ${
+                !cat.ativo ? "opacity-50" : ""
               }`}
             >
-              {cat.ativo ? "Desativar" : "Reativar"}
-            </button>
-          </div>
-        ))}
+              <span
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0"
+                style={{ backgroundColor: cat.cor }}
+              >
+                {cat.emoji}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-100 truncate">{cat.nome}</p>
+                <p className="text-[11px] text-ink-500">{cat.id}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingId(cat.id)}
+                className="p-1.5 rounded-full text-ink-400 hover:text-ink-100 hover:bg-ink-700/50"
+                aria-label="Editar categoria"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setAtivo(cat.id, !cat.ativo)}
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                  cat.ativo
+                    ? "border-ink-700 text-ink-400 hover:text-red-400 hover:border-red-500/50"
+                    : "border-quorum-500/50 text-quorum-500"
+                }`}
+              >
+                {cat.ativo ? "Desativar" : "Reativar"}
+              </button>
+            </div>
+          )
+        )}
       </div>
 
       <form onSubmit={handleCreate} className="bg-ink-800/40 border border-ink-700 rounded-2xl p-4 space-y-3">

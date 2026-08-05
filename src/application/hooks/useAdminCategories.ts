@@ -66,5 +66,23 @@ export function useAdminCategories() {
     [invalidate]
   );
 
-  return { ...query, createCategory, setAtivo, isSubmitting, error };
+  const updateCategory = useCallback(
+    async (id: string, input: { nome: string; emoji: string; cor: string }): Promise<boolean> => {
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        await CategoriesRepository.update(id, input);
+        invalidate();
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível salvar a categoria.");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [invalidate]
+  );
+
+  return { ...query, createCategory, setAtivo, updateCategory, isSubmitting, error };
 }

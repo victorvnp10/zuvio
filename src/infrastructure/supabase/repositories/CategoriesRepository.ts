@@ -38,4 +38,15 @@ export const CategoriesRepository = {
     const { error } = await supabase.from("categories").update({ ativo }).eq("id", id);
     if (error) throw new Error(error.message);
   },
+
+  async update(id: string, input: { nome: string; emoji: string; cor: string }): Promise<Category> {
+    const { data, error } = await supabase
+      .from("categories")
+      .update({ nome: input.nome, emoji: input.emoji, cor: input.cor })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return toCategory(data);
+  },
 };
