@@ -172,7 +172,7 @@ export function EventDetailScreen() {
 
         {/* Título em destaque, logo abaixo da imagem */}
         <div className="px-4">
-          <h2 className="font-display font-semibold text-xl text-ink-100 leading-snug">
+          <h2 className="font-display font-bold text-xl text-ink-100 leading-tight tracking-tight">
             {event.titulo}
           </h2>
         </div>
@@ -202,7 +202,7 @@ export function EventDetailScreen() {
             <button
               onClick={isCommitted ? handleCancel : handleCommit}
               disabled={isActing || (!isCommitted && quorum.vagasEsgotadas)}
-              className={`ml-auto text-sm font-semibold px-5 py-2 rounded-full transition-colors ${
+              className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
                 isCommitted
                   ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
                   : "bg-coral-500 text-ink-950 disabled:opacity-50"
@@ -239,10 +239,10 @@ export function EventDetailScreen() {
         )}
 
         {/* Anfitrião, embaixo — assinatura de quem organiza */}
-        <div className="flex items-center gap-1.5 px-4 pt-1">
-          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={18} />
-          <span className="text-xs text-ink-500">
-            organizado por <span className="text-ink-300 font-medium">{organizador?.nome ?? "..."}</span>
+        <div className="flex items-center gap-2 px-4 pt-1 text-xs text-ink-400">
+          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={20} />
+          <span>
+            organizado por <b className="text-ink-200 font-bold">{organizador?.nome ?? "..."}</b>
           </span>
         </div>
 

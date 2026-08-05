@@ -119,7 +119,7 @@ export function DiscoveryFeedScreen() {
 
       {error && <p className="text-sm text-red-400 text-center py-2">{error}</p>}
 
-      <div>
+      <div className="px-4 py-4 space-y-4">
         {events?.map((event) => (
           <EventPostCard
             key={event.id}

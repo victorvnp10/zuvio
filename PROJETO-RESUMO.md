@@ -246,15 +246,47 @@ este documento.
 
 ### Conferência contra o protótipo HTML aprovado (`proposta-identidade-visual.html`)
 
-O protótipo estático foi reenviado e conferido linha a linha contra a
-implementação React. Único gap encontrado e corrigido: a pilha de
-avatares confirmados (`ConfirmedStack` em `EventPostCard.tsx`) não
-mostrava o selo **"+N"** de overflow quando há mais de 3 confirmados
-(visível no protótipo no card "5/5" — M, J, P, +2). Corrigido: agora
-renderiza um círculo `+{extra}` do mesmo tamanho (20px) ao final da
-pilha quando `participantIds.length > 3`. Resto já batia: wordmark
-"Zuv**i**o" com o "i" em coral, anel de quórum com label X/Y, divisória
-perfurada, selos flutuantes, confete na transição.
+Primeira passada (superficial) só corrigiu o selo "+N" de overflow na
+pilha de avatares. O usuário apontou que "não ficou bom" e pediu para
+seguir **tudo** como está no HTML — segunda passada, muito mais
+rigorosa, encontrou o problema real:
+
+**Bug estrutural principal**: o `EventPostCard.tsx` não reproduzia o
+conceito de "ticket" do protótipo. No HTML, `.ticket { margin: 16px;
+border-radius: 20px; border: 1px solid ink-800; overflow: hidden }` —
+cada evento é uma **caixa flutuante independente**, com cantos
+arredondados e borda nos 4 lados. A implementação antiga só arredondava
+a imagem e usava borda inferior estilo feed do Instagram — o app inteiro
+tinha uma sensação visual diferente da proposta. Corrigido: o
+`<article>` agora é a própria caixa `rounded-[20px] border border-ink-800
+overflow-hidden`, a imagem não tem mais margem/arredondamento próprios
+(fica colada no topo da caixa, cortada pelo `overflow-hidden` do pai), e
+o feed (`DiscoveryFeedScreen`) ganhou `px-4 py-4 space-y-4` pra dar o
+respiro de 16px entre os cards que antes vinha da margem individual da
+imagem.
+
+**Bugs de cor pontuais, também corrigidos**:
+- Os "furos" da `.ticket-stub-divider` (`src/index.css`) usavam
+  `background: var(--color-ink-900)` — mesma cor do card, ou seja, o
+  recorte perfurado ficava invisível. Corrigido pra `--color-ink-950`
+  (uma tonalidade mais escura), igual ao protótipo.
+- O anel (`ring-ink-900`) ao redor de cada avatar na pilha de
+  confirmados tinha o mesmo problema (mesma cor do fundo, sem
+  contraste). Corrigido pra `ring-ink-950`, com avatares em 22px (era
+  20px) pra bater com `.avatar-stack .av` do protótipo.
+- Selo "+N": cor de fundo trocada de `ink-700` pra `ink-500`
+  (`#5A6491`), igual ao protótipo.
+
+**Tipografia/cores de texto ajustadas** em `EventPostCard.tsx` e
+`EventDetailScreen.tsx` pra bater com o HTML: título `font-bold` 19px
+(era `font-semibold` 18px), meta do evento em `text-ink-400` (era
+`ink-500`), linha do anfitrião em `text-ink-400` com o nome em `<b
+className="text-ink-200 font-bold">` (era `ink-300 font-medium`), botão
+"Participar" em `font-bold text-[13px] py-2 px-[18px]` (era
+`font-semibold text-sm px-4 py-1.5`).
+
+Build validado (`tsc -b` + `npm run build`) depois de todas as
+correções, sem erros.
 
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).

@@ -102,7 +102,7 @@ header {
   top: 50%;
   width: 20px;
   height: 20px;
-  background: var(--color-ink-900);
+  background: var(--color-ink-950);
   border-radius: 9999px;
   transform: translateY(-50%);
 }

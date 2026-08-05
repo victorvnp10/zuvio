@@ -23,7 +23,7 @@ function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
         <ParticipantDot key={id} userId={id} />
       ))}
       {extra > 0 && (
-        <div className="ring-2 ring-ink-900 rounded-full w-5 h-5 flex items-center justify-center bg-ink-700 text-[9px] font-bold text-ink-200">
+        <div className="ring-2 ring-ink-950 rounded-full w-[22px] h-[22px] flex items-center justify-center bg-ink-500 text-[9px] font-bold text-ink-950">
           +{extra}
         </div>
       )}
@@ -34,8 +34,8 @@ function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
 function ParticipantDot({ userId }: { userId: string }) {
   const { data: profile } = usePublicProfile(userId);
   return (
-    <div className="ring-2 ring-ink-900 rounded-full">
-      <Avatar fotoUrl={profile?.fotoUrl} nome={profile?.nome} size={20} />
+    <div className="ring-2 ring-ink-950 rounded-full">
+      <Avatar fotoUrl={profile?.fotoUrl} nome={profile?.nome} size={22} />
     </div>
   );
 }
@@ -99,10 +99,13 @@ export function EventPostCard({
   };
 
   return (
-    <article className="bg-ink-900 border-b border-ink-800 pb-3">
+    // A caixa "ticket": cantos arredondados + borda nos 4 lados +
+    // overflow hidden — é o que faz o card parecer uma ficha de
+    // ingresso flutuante, não um post de feed contínuo.
+    <article className="rounded-[20px] bg-ink-900 border border-ink-800 overflow-hidden">
       {/* Imagem, com selos flutuando direto nela e o anel de quórum
           sempre no mesmo canto — a assinatura visual do Zuvio. */}
-      <div className="relative mx-3 mt-3 rounded-2xl overflow-hidden">
+      <div className="relative">
         {celebrating && <Confetti />}
         <button
           onClick={() => navigate(`/eventos/${event.id}`)}
@@ -115,7 +118,7 @@ export function EventPostCard({
               : undefined
           }
         >
-          <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0) 40%, rgba(11,14,26,0.55) 100%)" }} />
           {!event.capaUrl && (
             <span className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
               {cover.emoji}
@@ -124,7 +127,7 @@ export function EventPostCard({
         </button>
 
         <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-          <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
+          <span className="inline-flex items-center gap-1.5 bg-ink-950/55 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
             {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
           </span>
@@ -134,7 +137,7 @@ export function EventPostCard({
                 ? "bg-quorum-500 text-ink-950"
                 : urgent
                 ? "bg-coral-500 text-ink-950"
-                : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
+                : "bg-ink-950/55 backdrop-blur-sm text-ink-100"
             }`}
           >
             {quorum.quorumAtingido ? "CONFIRMADO 🔓" : countdown}
@@ -143,80 +146,83 @@ export function EventPostCard({
 
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
           <div className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5">
-            <QuorumMeter quorum={quorum} size={44} />
+            <QuorumMeter quorum={quorum} size={46} />
           </div>
           {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
         </div>
       </div>
 
-      {/* Divisória de canhoto de ingresso */}
-      <div className="ticket-stub-divider mx-3 my-3" />
+      {/* Divisória de canhoto de ingresso — sem margem lateral, os
+          recortes cortam nas bordas do card (overflow hidden acima). */}
+      <div className="ticket-stub-divider" />
 
-      {/* Título em destaque, logo abaixo da imagem */}
-      <button onClick={() => navigate(`/eventos/${event.id}`)} className="w-full text-left px-3">
-        <h2 className="font-display font-semibold text-lg text-ink-100 leading-snug">
-          {event.titulo}
-        </h2>
-        <p className="text-xs text-ink-500 mt-0.5">
-          {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })} ·{" "}
-          {event.local.endereco}
-        </p>
-      </button>
-
-      {/* Ações: curtir, comentar, compartilhar — e Participar, decisivo */}
-      <div className="flex items-center gap-4 px-3 pt-3">
-        <button onClick={handleLike} disabled={isLikePending} aria-label={isLiked ? "Descurtir" : "Curtir"}>
-          <Heart size={24} strokeWidth={1.8} className={isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"} />
-        </button>
-        <button onClick={() => navigate(`/eventos/${event.id}`)} aria-label="Comentar">
-          <MessageCircle size={24} strokeWidth={1.8} className="text-ink-200" />
-        </button>
-        <button onClick={handleShare} aria-label="Compartilhar">
-          <Share2 size={22} strokeWidth={1.8} className="text-ink-200" />
+      <div className="pt-3.5 px-4 pb-4">
+        {/* Título em destaque, logo abaixo da imagem */}
+        <button onClick={() => navigate(`/eventos/${event.id}`)} className="w-full text-left">
+          <h2 className="font-display font-bold text-[19px] leading-tight tracking-tight text-ink-100 mb-1">
+            {event.titulo}
+          </h2>
+          <p className="text-xs text-ink-400 mb-3">
+            {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })} ·{" "}
+            {event.local.endereco}
+          </p>
         </button>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isCommitted) onQuickCancel();
-            else onQuickCommit();
-          }}
-          disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
-          className={`ml-auto text-sm font-semibold px-4 py-1.5 rounded-full transition-colors ${
-            isOwnEvent
-              ? "bg-ink-800 text-ink-500 cursor-default"
-              : isCommitted
-              ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
-              : "bg-coral-500 text-ink-950 disabled:opacity-50"
-          }`}
-        >
-          {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
-        </button>
-      </div>
+        {/* Ações: curtir, comentar, compartilhar — e Participar, decisivo */}
+        <div className="flex items-center gap-3.5">
+          <button onClick={handleLike} disabled={isLikePending} aria-label={isLiked ? "Descurtir" : "Curtir"}>
+            <Heart size={20} strokeWidth={1.8} className={isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"} />
+          </button>
+          <button onClick={() => navigate(`/eventos/${event.id}`)} aria-label="Comentar">
+            <MessageCircle size={20} strokeWidth={1.8} className="text-ink-200" />
+          </button>
+          <button onClick={handleShare} aria-label="Compartilhar">
+            <Share2 size={19} strokeWidth={1.8} className="text-ink-200" />
+          </button>
 
-      {(likeCount > 0 || quorum.vagasConfirmadas > 0) && (
-        <p className="text-sm px-3 pt-2 text-ink-200">
-          {likeCount > 0 && (
-            <span className="font-semibold">
-              {likeCount} curtida{likeCount === 1 ? "" : "s"}
-            </span>
-          )}
-          {likeCount > 0 && quorum.vagasConfirmadas > 0 && " · "}
-          {quorum.vagasConfirmadas > 0 && (
-            <>
-              <span className="font-semibold">{quorum.vagasConfirmadas}</span> confirmado
-              {quorum.vagasConfirmadas === 1 ? "" : "s"} de {quorum.vagasTotal}
-            </>
-          )}
-        </p>
-      )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isCommitted) onQuickCancel();
+              else onQuickCommit();
+            }}
+            disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
+            className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
+              isOwnEvent
+                ? "bg-ink-800 text-ink-500 cursor-default"
+                : isCommitted
+                ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
+                : "bg-coral-500 text-ink-950 disabled:opacity-50"
+            }`}
+          >
+            {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
+          </button>
+        </div>
 
-      {/* Anfitrião, embaixo — assinatura de quem organiza */}
-      <div className="flex items-center gap-1.5 px-3 pt-2">
-        <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={18} />
-        <span className="text-xs text-ink-500">
-          organizado por <span className="text-ink-300 font-medium">{organizador?.nome ?? "..."}</span>
-        </span>
+        {/* Anfitrião, embaixo — assinatura de quem organiza */}
+        <div className="flex items-center gap-2 mt-3 text-xs text-ink-400">
+          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={20} />
+          <span>
+            organizado por <b className="text-ink-200 font-bold">{organizador?.nome ?? "..."}</b>
+          </span>
+        </div>
+
+        {(likeCount > 0 || quorum.vagasConfirmadas > 0) && (
+          <p className="text-xs text-ink-400 mt-2">
+            {likeCount > 0 && (
+              <span className="font-semibold text-ink-200">
+                {likeCount} curtida{likeCount === 1 ? "" : "s"}
+              </span>
+            )}
+            {likeCount > 0 && quorum.vagasConfirmadas > 0 && " · "}
+            {quorum.vagasConfirmadas > 0 && (
+              <>
+                <span className="font-semibold text-ink-200">{quorum.vagasConfirmadas}</span> confirmado
+                {quorum.vagasConfirmadas === 1 ? "" : "s"} de {quorum.vagasTotal}
+              </>
+            )}
+          </p>
+        )}
       </div>
     </article>
   );
