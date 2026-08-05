@@ -8,7 +8,6 @@
  * um projeto Supabase já provisionado.
  */
 
-export type EventCategoryRow = "esporte" | "viagem" | "hobby" | "encontro" | "estudo" | "outro";
 export type EventModalityRow = "estranhos" | "amigos" | "hibrida" | "restrita";
 export type EventStatusRow =
   | "aberto"
@@ -18,6 +17,27 @@ export type EventStatusRow =
   | "cancelado";
 export type CommitmentStatusRow = "confirmado" | "check-in" | "no-show" | "cancelado";
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
+
+/** Formato retornado por `admin_get_dashboard_stats()` (ver migração 0028). */
+export interface AdminDashboardStats {
+  usuariosTotais: number;
+  novosUsuarios7d: number;
+  usuariosAtivos24h: number;
+  usuariosAtivos7d: number;
+  usuariosAtivos30d: number;
+  sessoes30d: number;
+  tempoMedioSessaoMin: number;
+  taxaSessaoUnicoEvento30d: number;
+  eventosPropostasTotal: number;
+  eventosPropostas7d: number;
+  compromissosConfirmadosTotal: number;
+  checkinsTotal: number;
+  taxaCheckin: number;
+  mensagensChatTotal: number;
+  fotosPostadasTotal: number;
+  pageViewsPorDia: { dia: string; contagem: number }[];
+  topPaginas7d: { path: string; contagem: number }[];
+}
 
 export interface Database {
   public: {
@@ -30,7 +50,7 @@ export interface Database {
           data_nascimento: string | null;
           genero: string | null;
           localizacao_base: string | null;
-          categorias_interesse: EventCategoryRow[];
+          categorias_interesse: string[];
           score_confiabilidade: number;
           selo: TrustBadgeRow;
           is_admin: boolean;
@@ -49,7 +69,7 @@ export interface Database {
         Row: {
           id: string;
           criador_id: string;
-          categoria: EventCategoryRow;
+          categoria: string;
           titulo: string;
           descricao: string;
           data_hora: string;
@@ -322,11 +342,57 @@ export interface Database {
           texto: string;
         };
       };
+      categories: {
+        Row: {
+          id: string;
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem: number;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          id: string;
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem?: number;
+          ativo?: boolean;
+        };
+        Update: Partial<{
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem: number;
+          ativo: boolean;
+        }>;
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string;
+          tipo: "session_start" | "page_view" | "heartbeat";
+          path: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          user_id: string | null;
+          session_id: string;
+          tipo: "session_start" | "page_view" | "heartbeat";
+          path?: string | null;
+        };
+      };
     };
     Functions: {
       get_own_profile: {
         Args: Record<string, never>;
         Returns: Database["public"]["Tables"]["profiles"]["Row"];
+      };
+      admin_get_dashboard_stats: {
+        Args: Record<string, never>;
+        Returns: AdminDashboardStats;
       };
       commit_to_event: {
         Args: { p_event_id: string };

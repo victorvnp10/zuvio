@@ -7,7 +7,8 @@ import { CommitmentsRepository } from "../../infrastructure/supabase/repositorie
 import { EventLikesRepository } from "../../infrastructure/supabase/repositories/EventLikesRepository";
 import { EventPhotosRepository } from "../../infrastructure/supabase/repositories/EventPhotosRepository";
 import { EventPostCard } from "../components/EventPostCard";
-import { CATEGORY_OPTIONS, CATEGORY_COVER } from "../components/CategoryBadge";
+import { categoryGradientStyle } from "../components/CategoryBadge";
+import { useCategories } from "../../application/hooks/useCategories";
 import { BottomNav } from "../layout/BottomNav";
 import type { EventCategory } from "../../domain/entities/types";
 
@@ -15,6 +16,7 @@ export function DiscoveryFeedScreen() {
   const { user } = useAuth();
   const [categoria, setCategoria] = useState<EventCategory | undefined>(undefined);
   const { data: events, isLoading } = useDiscoveryFeed(categoria);
+  const { data: categories } = useCategories();
   const { commit, cancel, pendingEventId, error } = useQuickCommit();
 
   const eventIds = useMemo(() => events?.map((e) => e.id) ?? [], [events]);
@@ -98,25 +100,23 @@ export function DiscoveryFeedScreen() {
           </span>
           <span className="text-[11px] text-ink-400">Todas</span>
         </button>
-        {CATEGORY_OPTIONS.map((opt) => {
-          const cover = CATEGORY_COVER[opt.value];
-          const isActive = categoria === opt.value;
+        {(categories ?? []).map((cat) => {
+          const isActive = categoria === cat.id;
           return (
             <button
-              key={opt.value}
-              onClick={() => setCategoria(opt.value)}
+              key={cat.id}
+              onClick={() => setCategoria(cat.id)}
               className="flex flex-col items-center gap-1 shrink-0"
             >
               <span
-                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl bg-gradient-to-br ${cover.gradient} ${
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl ${
                   isActive ? "ring-2 ring-coral-500 ring-offset-2 ring-offset-ink-900" : ""
                 }`}
+                style={categoryGradientStyle(cat.cor)}
               >
-                {cover.emoji}
+                {cat.emoji}
               </span>
-              <span className="text-[11px] text-ink-400 truncate w-14 text-center">
-                {opt.label.replace(/^[^\s]+\s/, "")}
-              </span>
+              <span className="text-[11px] text-ink-400 truncate w-14 text-center">{cat.nome}</span>
             </button>
           );
         })}

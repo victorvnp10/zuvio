@@ -9,7 +9,8 @@ import { useMyEvents } from "../../application/hooks/useMyEvents";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import { QuorumBar } from "../components/QuorumMeter";
-import { CATEGORY_COVER, CATEGORY_DOT } from "../components/CategoryBadge";
+import { categoryGradientStyle } from "../components/CategoryBadge";
+import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import type { EventProposal } from "../../domain/entities/types";
 
@@ -28,8 +29,9 @@ function EventCard({
   onDelete?: () => void;
   canManage?: boolean;
 }) {
+  const { data: categories } = useCategories();
+  const categoria = findCategory(categories, event.categoria);
   const quorum = summarizeQuorum(event);
-  const cover = CATEGORY_COVER[event.categoria];
   const isCancelled = event.status === "cancelado";
   // Antes do quórum ser atingido, ninguém "de fora" depende do evento
   // como um compromisso firmado — dá para excluir de verdade. Depois
@@ -43,24 +45,22 @@ function EventCard({
     <div className="bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden">
       <button onClick={onOpen} className="w-full text-left">
         <div
-          className={`relative h-24 flex items-center justify-center ${isCancelled ? "grayscale opacity-60" : ""} ${
-            event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
-          }`}
+          className={`relative h-24 flex items-center justify-center ${isCancelled ? "grayscale opacity-60" : ""}`}
           style={
             event.capaUrl
               ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : undefined
+              : categoryGradientStyle(categoria.cor)
           }
         >
-          {!event.capaUrl && <span className="text-3xl opacity-90">{cover.emoji}</span>}
+          {!event.capaUrl && <span className="text-3xl opacity-90">{categoria.emoji}</span>}
 
           {/* Selos flutuantes — mesmo conceito do feed/detalhe, só que
               compactos (sem faixa perfurada, sem confete: é uma lista
               de gestão, não o cartão de "convite"). */}
           <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 bg-ink-950/60 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
-              {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: categoria.cor }} />
+              {categoria.nome}
             </span>
             {isCancelled ? (
               <span className="text-[10px] font-semibold bg-ink-900/80 text-red-400 px-2 py-0.5 rounded-full">

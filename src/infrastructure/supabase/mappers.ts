@@ -1,5 +1,6 @@
 import type { Database } from "./database.types";
 import type {
+  Category,
   ChatMessage,
   CollaborativeItem,
   Commitment,
@@ -29,6 +30,7 @@ type EventPhotoRow = Database["public"]["Tables"]["event_photos"]["Row"];
 type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 type GroupInviteRow = Database["public"]["Tables"]["group_invites"]["Row"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -45,6 +47,17 @@ export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   categoriasInteresse: row.categorias_interesse,
   scoreConfiabilidade: row.score_confiabilidade,
   selo: row.selo,
+  isAdmin: "is_admin" in row ? row.is_admin : false,
+  criadoEm: row.criado_em,
+});
+
+export const toCategory = (row: CategoryRow): Category => ({
+  id: row.id,
+  nome: row.nome,
+  emoji: row.emoji,
+  cor: row.cor,
+  ordem: row.ordem,
+  ativo: row.ativo,
   criadoEm: row.criado_em,
 });
 

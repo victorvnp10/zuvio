@@ -1,43 +1,19 @@
-import type { EventCategory } from "../../domain/entities/types";
+import { useCategories, findCategory } from "../../application/hooks/useCategories";
 
-const LABELS: Record<EventCategory, string> = {
-  esporte: "🏃 Esporte",
-  viagem: "✈️ Viagem",
-  hobby: "🎨 Hobby",
-  encontro: "☕ Encontro",
-  estudo: "📚 Estudo",
-  outro: "✨ Outro",
-};
+/** Cor de base do gradiente da capa quando não há foto/capa própria —
+ * mesma constante em todo lugar que monta o gradiente por categoria. */
+const GRADIENT_END = "#1C2340";
 
-/** Gradiente + emoji por categoria — usado como capa do card enquanto
- * o app não tem upload de foto/vídeo do evento (fase 1 do roadmap). */
-export const CATEGORY_COVER: Record<EventCategory, { gradient: string; emoji: string }> = {
-  esporte: { gradient: "from-quorum-600 to-ink-800", emoji: "🏃" },
-  viagem: { gradient: "from-coral-600 to-ink-800", emoji: "✈️" },
-  hobby: { gradient: "from-amber-500 to-ink-800", emoji: "🎨" },
-  encontro: { gradient: "from-ink-600 to-ink-800", emoji: "☕" },
-  estudo: { gradient: "from-ink-500 to-ink-800", emoji: "📚" },
-  outro: { gradient: "from-ink-700 to-ink-800", emoji: "✨" },
-};
+export function categoryGradientStyle(cor: string): React.CSSProperties {
+  return { background: `linear-gradient(135deg, ${cor}, ${GRADIENT_END})` };
+}
 
-/** Cor sólida do pontinho de categoria (usado no selo flutuante sobre a imagem). */
-export const CATEGORY_DOT: Record<EventCategory, string> = {
-  esporte: "#12E0B2",
-  viagem: "#FF6B4A",
-  hobby: "#F0A93A",
-  encontro: "#8A93B8",
-  estudo: "#5A6491",
-  outro: "#DCE0F0",
-};
-
-export function CategoryBadge({ categoria }: { categoria: EventCategory }) {
+export function CategoryBadge({ categoria }: { categoria: string }) {
+  const { data: categories } = useCategories();
+  const cat = findCategory(categories, categoria);
   return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-ink-800 text-ink-200 border border-ink-700">
-      {LABELS[categoria]}
+      {cat.emoji} {cat.nome}
     </span>
   );
 }
-
-export const CATEGORY_OPTIONS: { value: EventCategory; label: string }[] = (
-  Object.keys(LABELS) as EventCategory[]
-).map((value) => ({ value, label: LABELS[value] }));

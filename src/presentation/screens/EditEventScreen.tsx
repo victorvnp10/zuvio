@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { useEventCover } from "../../application/hooks/useEventCover";
-import { CATEGORY_OPTIONS } from "../components/CategoryBadge";
+import { useCategories } from "../../application/hooks/useCategories";
 import { isValidQuorum, canReduceVagasTo } from "../../domain/services/QuorumService";
 import { validateEventType } from "../../domain/services/EventTypeService";
 import type {
@@ -55,6 +55,7 @@ export function EditEventScreen() {
     eventId ?? ""
   );
   const { updateEvent, isSubmitting, error } = useManageMyEvent();
+  const { data: categories } = useCategories();
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const [titulo, setTitulo] = useState("");
@@ -204,18 +205,18 @@ export function EditEventScreen() {
           <div>
             <label className="block text-sm text-ink-400 mb-2">Categoria</label>
             <div className="grid grid-cols-2 gap-2">
-              {CATEGORY_OPTIONS.map((opt) => (
+              {(categories ?? []).map((cat) => (
                 <button
-                  key={opt.value}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setCategoria(opt.value)}
+                  onClick={() => setCategoria(cat.id)}
                   className={`p-3 rounded-xl border text-sm font-medium text-left transition-colors ${
-                    categoria === opt.value
+                    categoria === cat.id
                       ? "border-coral-500 bg-coral-500/10 text-ink-100"
                       : "border-ink-700 text-ink-400"
                   }`}
                 >
-                  {opt.label}
+                  {cat.emoji} {cat.nome}
                 </button>
               ))}
             </div>

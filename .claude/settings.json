@@ -10,7 +10,12 @@
       "Bash(npx vercel *)",
       "Bash(git rm *)",
       "Bash(curl -s https://bhhermoidcwneygiafnr.supabase.co/auth/v1/settings)",
-      "Bash(curl -sS -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" https://bhhermoidcwneygiafnr.supabase.co/auth/v1/settings)"
+      "Bash(curl -sS -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" https://bhhermoidcwneygiafnr.supabase.co/auth/v1/settings)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\victo\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-victo-OneDrive-Documentos-GitHub---Projetos-zuvio\\\\81b45850-62fe-4e95-b5d6-18035e926bc0\\\\scratchpad\\\\pw\")",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)"
     ]
   }
 }

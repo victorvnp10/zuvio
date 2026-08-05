@@ -21,7 +21,8 @@ import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebrati
 import { useAuth } from "../../application/context/AuthContext";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { QuorumMeter } from "../components/QuorumMeter";
-import { CATEGORY_COVER, CATEGORY_DOT } from "../components/CategoryBadge";
+import { categoryGradientStyle } from "../components/CategoryBadge";
+import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
@@ -61,6 +62,7 @@ export function EventDetailScreen() {
   const like = useEventLikeState(eventId ?? "", user?.id ?? "");
   const celebrating = useQuorumCelebration(quorum?.quorumAtingido ?? false);
   const { data: organizador } = usePublicProfile(event?.criadorId);
+  const { data: categories } = useCategories();
 
   if (isLoading || !event || !quorum || !user) {
     return (
@@ -77,7 +79,7 @@ export function EventDetailScreen() {
   const isCommitted = myCommitment && myCommitment.status !== "cancelado";
   const canCheckin = myCommitment?.status === "confirmado";
   const alreadyCheckedIn = myCommitment?.status === "check-in";
-  const cover = CATEGORY_COVER[event.categoria];
+  const categoria = findCategory(categories, event.categoria);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -130,16 +132,14 @@ export function EventDetailScreen() {
         <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden">
           {celebrating && <Confetti />}
           <div
-            className={`w-full aspect-square flex items-center justify-center ${
-              event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
-            }`}
+            className="w-full aspect-square flex items-center justify-center"
             style={
               event.capaUrl
                 ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-                : undefined
+                : categoryGradientStyle(categoria.cor)
             }
           >
-            {!event.capaUrl && <span className="text-7xl opacity-90">{cover.emoji}</span>}
+            {!event.capaUrl && <span className="text-7xl opacity-90">{categoria.emoji}</span>}
             <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
           </div>
 
@@ -147,8 +147,8 @@ export function EventDetailScreen() {
             <>
               <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                 <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
-                  {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
+                  {categoria.nome}
                 </span>
                 <span
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
-import { CATEGORY_OPTIONS } from "../components/CategoryBadge";
+import { useCategories } from "../../application/hooks/useCategories";
 import { FriendGroupSelector } from "../components/FriendGroupSelector";
 import { useCreateEvent } from "../../application/hooks/useCreateEvent";
 import { useAuth } from "../../application/context/AuthContext";
@@ -53,6 +53,7 @@ const STEPS = ["Categoria", "Data e local", "Vagas e quórum", "Tipo de evento"]
 export function CreateEventScreen() {
   const navigate = useNavigate();
   const { createEvent, isSubmitting, error } = useCreateEvent();
+  const { data: categories } = useCategories();
   const [step, setStep] = useState(0);
   const { user } = useAuth();
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
@@ -146,17 +147,17 @@ export function CreateEventScreen() {
           <div>
             <label className="block text-sm text-ink-400 mb-2">Categoria</label>
             <div className="grid grid-cols-2 gap-2">
-              {CATEGORY_OPTIONS.map((opt) => (
+              {(categories ?? []).map((cat) => (
                 <button
-                  key={opt.value}
-                  onClick={() => setCategoria(opt.value)}
+                  key={cat.id}
+                  onClick={() => setCategoria(cat.id)}
                   className={`p-3 rounded-xl border text-sm font-medium text-left transition-colors ${
-                    categoria === opt.value
+                    categoria === cat.id
                       ? "border-coral-500 bg-coral-500/10 text-ink-100"
                       : "border-ink-700 text-ink-400"
                   }`}
                 >
-                  {opt.label}
+                  {cat.emoji} {cat.nome}
                 </button>
               ))}
             </div>

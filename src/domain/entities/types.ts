@@ -7,13 +7,21 @@
  * converter entre o formato bruto do Postgres e estes tipos.
  */
 
-export type EventCategory =
-  | "esporte"
-  | "viagem"
-  | "hobby"
-  | "encontro"
-  | "estudo"
-  | "outro";
+/** Id (slug) de uma categoria — deixou de ser um conjunto fixo desde
+ * que o painel admin passou a gerenciar categorias (ver `Category`). */
+export type EventCategory = string;
+
+/** Categoria de evento, administrável pelo gestor da plataforma. */
+export interface Category {
+  id: string;
+  nome: string;
+  emoji: string;
+  /** Hex — usado tanto no pontinho quanto no gradiente da capa. */
+  cor: string;
+  ordem: number;
+  ativo: boolean;
+  criadoEm: string;
+}
 
 export type EventModality = "estranhos" | "amigos" | "hibrida" | "restrita";
 
@@ -62,6 +70,9 @@ export interface Profile {
   categoriasInteresse: EventCategory[];
   scoreConfiabilidade: number;
   selo: TrustBadge;
+  /** Só vem preenchido de verdade a partir de `getOwn()` (o próprio
+   * usuário) — `public_profiles` não expõe esse campo. */
+  isAdmin: boolean;
   criadoEm: string;
 }
 
@@ -90,7 +101,7 @@ export interface EventProposal {
 
   tipoEvento: TipoEvento;
 
-  /** null = usa o gradiente por categoria como capa (ver CATEGORY_COVER). */
+  /** null = usa o gradiente da categoria como capa (ver `categoryGradientStyle`). */
   capaUrl: string | null;
 
   /** Decisão do ORGANIZADOR (não de quem posta) — vale pra todas as

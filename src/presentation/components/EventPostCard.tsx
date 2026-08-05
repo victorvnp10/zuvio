@@ -12,7 +12,8 @@ import { Avatar } from "./Avatar";
 import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
 import { ParticipantsModal } from "./ParticipantsModal";
-import { CATEGORY_COVER, CATEGORY_DOT } from "./CategoryBadge";
+import { categoryGradientStyle } from "./CategoryBadge";
+import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import type { EventProposal, EventPhoto } from "../../domain/entities/types";
 
 function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
@@ -70,8 +71,9 @@ export function EventPostCard({
 }) {
   const navigate = useNavigate();
   const { data: organizador } = usePublicProfile(event.criadorId);
+  const { data: categories } = useCategories();
+  const categoria = findCategory(categories, event.categoria);
   const quorum = summarizeQuorum(event);
-  const cover = CATEGORY_COVER[event.categoria];
   const now = new Date().toISOString();
   const countdown = getCountdownLabel(event.dataHora, now);
   const urgent = isUrgent(event.dataHora, now);
@@ -154,21 +156,19 @@ export function EventPostCard({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className={`w-full aspect-square flex items-end ${
-            currentPhoto || event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
-          }`}
+          className="w-full aspect-square flex items-end"
           style={
             currentPhoto
               ? { backgroundImage: `url(${currentPhoto.fotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
               : event.capaUrl
               ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : undefined
+              : categoryGradientStyle(categoria.cor)
           }
         >
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0) 40%, rgba(11,14,26,0.55) 100%)" }} />
           {!currentPhoto && !event.capaUrl && (
             <span className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
-              {cover.emoji}
+              {categoria.emoji}
             </span>
           )}
         </button>
@@ -218,8 +218,8 @@ export function EventPostCard({
 
         <div className={`absolute left-3 right-3 flex items-start justify-between z-20 ${hasReels ? "top-7" : "top-3"}`}>
           <span className="inline-flex items-center gap-1.5 bg-ink-950/55 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
-            {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
+            {categoria.nome}
           </span>
           <span
             className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
