@@ -399,6 +399,18 @@ usado pro chat/fotos).
 `tsc -b` + `npm run build` validados, sem erros. Migração `0017` não
 testada contra Supabase real nesta sessão (mesma ressalva da `0016`).
 
+### Extensão: mesmo anel de quórum no feed também abre participantes
+
+Pedido feito olhando o card do feed (print do anel "1/1" + avatar):
+o mesmo acesso rápido à lista de participantes precisava valer no
+`EventPostCard`, não só na tela de detalhe. O `ParticipantsModal`
+recebia `commitments` já carregado (só existia isso na tela de
+detalhe) — generalizado: `commitments` virou opcional, e o modal busca
+sozinho via `CommitmentsRepository.listForEvent(eventId)` quando quem
+chama não tem a lista à mão (caso do feed, que só carrega os IDs dos
+confirmados, sem status). O anel de quórum do `EventPostCard` virou
+`<button>` com o mesmo modal.
+
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).
 

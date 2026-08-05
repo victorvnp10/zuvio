@@ -11,6 +11,7 @@ import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebrati
 import { Avatar } from "./Avatar";
 import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
+import { ParticipantsModal } from "./ParticipantsModal";
 import { CATEGORY_COVER, CATEGORY_DOT } from "./CategoryBadge";
 import type { EventProposal } from "../../domain/entities/types";
 
@@ -73,6 +74,7 @@ export function EventPostCard({
 
   const [isLiked, setIsLiked] = useState(likerIds.includes(currentUserId));
   const [likeCount, setLikeCount] = useState(likerIds.length);
+  const [showParticipants, setShowParticipants] = useState(false);
   const { toggle: toggleLike, isPending: isLikePending } = useEventLikeToggle(
     event.id,
     currentUserId
@@ -145,9 +147,16 @@ export function EventPostCard({
         </div>
 
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <div className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowParticipants(true);
+            }}
+            className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5"
+            aria-label="Ver participantes"
+          >
             <QuorumMeter quorum={quorum} size={46} />
-          </div>
+          </button>
           {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
         </div>
       </div>
@@ -224,6 +233,14 @@ export function EventPostCard({
           </p>
         )}
       </div>
+
+      {showParticipants && (
+        <ParticipantsModal
+          eventId={event.id}
+          organizadorId={event.criadorId}
+          onClose={() => setShowParticipants(false)}
+        />
+      )}
     </article>
   );
 }

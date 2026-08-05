@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
+import { CommitmentsRepository } from "../../infrastructure/supabase/repositories/CommitmentsRepository";
 import { Avatar } from "./Avatar";
 import { X, Crown } from "lucide-react";
 import type { Commitment } from "../../domain/entities/types";
@@ -42,22 +44,50 @@ function ParticipantRow({ userId, status }: { userId: string; status: Commitment
 }
 
 /** Modal de acesso rápido à relação de participantes — aberto a partir
- * de um toque no anel de quórum/pilha de avatares (ou no botão
- * "ver todos") na tela de detalhe do evento.
+ * de um toque no anel de quórum (no feed OU na tela de detalhe do
+ * evento) ou no botão "ver participantes" na tela de detalhe.
+ *
+ * `commitments` é opcional: quando quem chama já tem a lista carregada
+ * (tela de detalhe, via `useEventDetail`), passa direto e evita nova
+ * busca; quando não tem (card do feed, que só carrega os IDs dos
+ * confirmados, sem status), o modal busca sozinho a partir do
+ * `eventId`.
  *
  * O organizador é mostrado à parte, sempre — ele nunca tem uma linha
  * em `commitments` (não passa pelo fluxo de "comprometer-se" no
  * próprio evento, ver ARCHITECTURE.md), então filtrar `commitments`
  * sozinho o deixaria de fora da lista. */
 export function ParticipantsModal({
-  commitments,
+  eventId,
+  commitments: commitmentsProp,
   organizadorId,
   onClose,
 }: {
-  commitments: Commitment[];
+  eventId?: string;
+  commitments?: Commitment[];
   organizadorId: string;
   onClose: () => void;
 }) {
+  const [fetched, setFetched] = useState<Commitment[] | null>(null);
+  const [isLoading, setIsLoading] = useState(!commitmentsProp && Boolean(eventId));
+
+  useEffect(() => {
+    if (commitmentsProp || !eventId) return;
+    let isMounted = true;
+    setIsLoading(true);
+    CommitmentsRepository.listForEvent(eventId)
+      .then((data) => {
+        if (isMounted) setFetched(data);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId, commitmentsProp]);
+
+  const commitments = commitmentsProp ?? fetched ?? [];
   const active = commitments
     .filter((c) => c.userId !== organizadorId && (c.status === "confirmado" || c.status === "check-in"))
     .sort((a, b) => (a.status === b.status ? 0 : a.status === "check-in" ? -1 : 1));
@@ -70,7 +100,7 @@ export function ParticipantsModal({
       >
         <div className="flex items-center justify-between p-4 border-b border-ink-700">
           <h3 className="font-display font-semibold text-lg">
-            Participantes ({active.length + 1})
+            Participantes {!isLoading && `(${active.length + 1})`}
           </h3>
           <button onClick={onClose} className="text-ink-400 hover:text-ink-100" aria-label="Fechar">
             <X size={20} />
@@ -79,7 +109,8 @@ export function ParticipantsModal({
 
         <div className="overflow-y-auto px-4 divide-y divide-ink-700/60">
           <OrganizerRow userId={organizadorId} />
-          {active.length === 0 && (
+          {isLoading && <p className="text-sm text-ink-500 py-6 text-center">Carregando...</p>}
+          {!isLoading && active.length === 0 && (
             <p className="text-sm text-ink-500 py-6 text-center">Ninguém mais confirmou ainda.</p>
           )}
           {active.map((c) => (
