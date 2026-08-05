@@ -361,6 +361,44 @@ comunidade", o grupo é a única entidade nova.
    revisar com atenção ao rodar `0016` pela primeira vez, especialmente
    as políticas de `group_invites`/`group_members`.
 
+---
+
+## 9. Relação de participantes + avisos gerais do organizador
+
+Pedido: ao clicar num evento, acesso fácil à lista de participantes, e
+o organizador poder postar avisos gerais.
+
+### Relação de participantes (`ParticipantsModal.tsx`)
+
+Modal aberto de duas formas na `EventDetailScreen`: tocando no próprio
+anel de quórum (que virou `<button>`) ou no link "Ver participantes"
+logo abaixo da contagem de confirmados. Mostra o **organizador
+separado, sempre no topo** — ele nunca tem uma linha em `commitments`
+(não passa pelo fluxo de "comprometer-se" no próprio evento, ver bug
+#5 da seção 5), então filtrar só `commitments` o deixaria de fora —,
+seguido da lista de confirmados/check-in (ordenados: check-in
+primeiro).
+
+### Avisos gerais (`AnnouncementsSection.tsx` + migração `0017_event_announcements.sql`)
+
+Mural **separado do chat**: não depende do quórum (funciona desde o
+evento aberto — o organizador pode avisar mudança de horário/local
+antes de ter gente confirmada o bastante pra abrir o chat de verdade),
+e só o organizador escreve; participantes confirmados (ou o próprio
+organizador) só leem. Reaproveita `is_event_creator`/
+`is_event_participant` (já existiam desde a 0001) pras políticas de
+RLS — sem função nova de segurança precisando. Realtime habilitado
+(`alter publication supabase_realtime add table event_announcements`)
+igual ao chat. Posicionado logo no topo do corpo da tela de detalhe
+(antes até da descrição do evento), visível só pra quem já confirmou
+presença ou é o organizador (`isCommitted || isCreator`, mesmo gate
+usado pro chat/fotos).
+
+### Build
+
+`tsc -b` + `npm run build` validados, sem erros. Migração `0017` não
+testada contra Supabase real nesta sessão (mesma ressalva da `0016`).
+
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).
 

@@ -307,6 +307,20 @@ export interface Database {
           ativo?: boolean;
         };
       };
+      event_announcements: {
+        Row: {
+          id: string;
+          event_id: string;
+          autor_id: string;
+          texto: string;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          autor_id: string;
+          texto: string;
+        };
+      };
     };
     Functions: {
       commit_to_event: {

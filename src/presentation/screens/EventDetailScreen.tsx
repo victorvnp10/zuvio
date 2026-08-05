@@ -12,6 +12,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  Users,
 } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
@@ -25,6 +26,8 @@ import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { ChatPanel } from "../components/ChatPanel";
+import { AnnouncementsSection } from "../components/AnnouncementsSection";
+import { ParticipantsModal } from "../components/ParticipantsModal";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
@@ -40,6 +43,7 @@ export function EventDetailScreen() {
   const { user } = useAuth();
   const { cancelEvent, deleteEvent, isSubmitting: isManaging } = useManageMyEvent();
   const [confirmingRemoval, setConfirmingRemoval] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
   const {
     event,
     isLoading,
@@ -159,9 +163,13 @@ export function EventDetailScreen() {
                 </span>
               </div>
               <div className="absolute bottom-3 left-3">
-                <div className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5">
+                <button
+                  onClick={() => setShowParticipants(true)}
+                  className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5"
+                  aria-label="Ver participantes"
+                >
                   <QuorumMeter quorum={quorum} size={52} />
-                </div>
+                </button>
               </div>
             </>
           )}
@@ -238,6 +246,15 @@ export function EventDetailScreen() {
           </p>
         )}
 
+        {!isCancelled && (
+          <button
+            onClick={() => setShowParticipants(true)}
+            className="mx-4 flex items-center gap-1.5 text-xs font-semibold text-coral-500 -mt-2"
+          >
+            <Users size={14} /> Ver participantes
+          </button>
+        )}
+
         {/* Anfitrião, embaixo — assinatura de quem organiza */}
         <div className="flex items-center gap-2 px-4 pt-1 text-xs text-ink-400">
           <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={20} />
@@ -264,6 +281,15 @@ export function EventDetailScreen() {
           <p className="text-sm text-quorum-500 font-medium px-4">
             ✓ Check-in confirmado — bom evento!
           </p>
+        )}
+
+        {/* Mural de avisos do organizador — logo no topo, antes até da
+            descrição, porque é informação que precisa chegar rápido
+            (mudança de horário/local etc.), sem depender do quórum. */}
+        {!isCancelled && (isCommitted || isCreator) && eventId && (
+          <div className="mx-4">
+            <AnnouncementsSection eventId={eventId} isCreator={isCreator} />
+          </div>
         )}
 
         {/* Detalhes do evento — mesmo padrão de sempre */}
@@ -359,6 +385,14 @@ export function EventDetailScreen() {
             </div>
           </div>
         </div>
+      )}
+
+      {showParticipants && (
+        <ParticipantsModal
+          commitments={commitments}
+          organizadorId={event.criadorId}
+          onClose={() => setShowParticipants(false)}
+        />
       )}
 
       <BottomNav />

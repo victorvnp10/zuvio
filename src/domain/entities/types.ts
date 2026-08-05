@@ -154,6 +154,17 @@ export interface ChatMessage {
   criadoEm: string;
 }
 
+/** Aviso do organizador — diferente do chat: não depende do quórum,
+ * só quem organiza pode postar, lido por quem participa (ou pelo
+ * próprio organizador). */
+export interface EventAnnouncement {
+  id: string;
+  eventId: string;
+  autorId: string;
+  texto: string;
+  criadoEm: string;
+}
+
 export interface Rating {
   id: string;
   eventId: string;

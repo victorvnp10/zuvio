@@ -3,6 +3,7 @@ import type {
   ChatMessage,
   CollaborativeItem,
   Commitment,
+  EventAnnouncement,
   EventPhoto,
   EventProposal,
   Friendship,
@@ -19,6 +20,7 @@ type PublicProfileRow = Database["public"]["Tables"]["public_profiles"]["Row"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type CommitmentRow = Database["public"]["Tables"]["commitments"]["Row"];
 type ChatMessageRow = Database["public"]["Tables"]["chat_messages"]["Row"];
+type EventAnnouncementRow = Database["public"]["Tables"]["event_announcements"]["Row"];
 type RatingRow = Database["public"]["Tables"]["ratings"]["Row"];
 type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
 type FriendGroupRow = Database["public"]["Tables"]["friend_groups"]["Row"];
@@ -85,6 +87,14 @@ export const toCommitment = (row: CommitmentRow): Commitment => ({
 });
 
 export const toChatMessage = (row: ChatMessageRow): ChatMessage => ({
+  id: row.id,
+  eventId: row.event_id,
+  autorId: row.autor_id,
+  texto: row.texto,
+  criadoEm: row.criado_em,
+});
+
+export const toEventAnnouncement = (row: EventAnnouncementRow): EventAnnouncement => ({
   id: row.id,
   eventId: row.event_id,
   autorId: row.autor_id,
