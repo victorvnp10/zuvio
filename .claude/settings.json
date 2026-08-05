@@ -7,7 +7,10 @@
       "PowerShell(vercel --version; vercel whoami 2>&1; echo \"---env---\"; Test-Path \"$env:USERPROFILE\\\\.local\\\\share\\\\com.vercel.cli\"; Test-Path \"$env:USERPROFILE\\\\AppData\\\\Local\\\\vercel\")",
       "mcp__claude_ai_Supabase__get_edge_function",
       "Bash(npx supabase *)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(git rm *)",
+      "Bash(curl -s https://bhhermoidcwneygiafnr.supabase.co/auth/v1/settings)",
+      "Bash(curl -sS -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" https://bhhermoidcwneygiafnr.supabase.co/auth/v1/settings)"
     ]
   }
 }
