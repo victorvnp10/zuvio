@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npx --yes vercel --version)",
-      "Bash(npx --yes supabase --version)"
+      "Bash(npx --yes supabase --version)",
+      "PowerShell(Get-Command vercel -ErrorAction SilentlyContinue | Select-Object Source; Get-Command supabase -ErrorAction SilentlyContinue | Select-Object Source; Get-ChildItem \"$env:APPDATA\\\\..\\\\Local\\\\supabase\" -ErrorAction SilentlyContinue; Test-Path \"$env:USERPROFILE\\\\.supabase\"; $env:SUPABASE_ACCESS_TOKEN -ne $null; $env:VERCEL_TOKEN -ne $null)",
+      "PowerShell(vercel --version; vercel whoami 2>&1; echo \"---env---\"; Test-Path \"$env:USERPROFILE\\\\.local\\\\share\\\\com.vercel.cli\"; Test-Path \"$env:USERPROFILE\\\\AppData\\\\Local\\\\vercel\")",
+      "mcp__claude_ai_Supabase__get_edge_function",
+      "Bash(npx supabase *)",
+      "Bash(npx vercel *)"
     ]
   }
 }
