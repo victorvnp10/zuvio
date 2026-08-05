@@ -26,6 +26,8 @@ export interface CreateEventInput {
   modoCustoColaborativo?: ModoCustoColaborativo | null;
   valorPorPessoa?: number | null;
   valorTotalRateio?: number | null;
+  /** Decisão do organizador — default false (só participantes veem). */
+  fotosPublicas?: boolean;
 }
 
 export interface UpdateEventInput {
@@ -46,6 +48,7 @@ export interface UpdateEventInput {
   modoCustoColaborativo?: ModoCustoColaborativo | null;
   valorPorPessoa?: number | null;
   valorTotalRateio?: number | null;
+  fotosPublicas?: boolean;
 }
 
 export const EventsRepository = {
@@ -107,6 +110,7 @@ export const EventsRepository = {
         modo_custo_colaborativo: input.modoCustoColaborativo ?? null,
         valor_por_pessoa: input.valorPorPessoa ?? null,
         valor_total_rateio: input.valorTotalRateio ?? null,
+        fotos_publicas: input.fotosPublicas ?? false,
       })
       .select("*")
       .single();
@@ -143,6 +147,7 @@ export const EventsRepository = {
       patch.modo_custo_colaborativo = changes.modoCustoColaborativo;
     if (changes.valorPorPessoa !== undefined) patch.valor_por_pessoa = changes.valorPorPessoa;
     if (changes.valorTotalRateio !== undefined) patch.valor_total_rateio = changes.valorTotalRateio;
+    if (changes.fotosPublicas !== undefined) patch.fotos_publicas = changes.fotosPublicas;
     if (changes.geo !== undefined) {
       patch.geo_lat = changes.geo?.lat ?? null;
       patch.geo_lng = changes.geo?.lng ?? null;

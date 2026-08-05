@@ -346,7 +346,12 @@ export function EventDetailScreen() {
           )}
 
           {!isCancelled && eventId && (isCommitted || isCreator) && (
-            <EventPhotosSection eventId={eventId} currentUserId={user.id} isCreator={isCreator} />
+            <EventPhotosSection
+              eventId={eventId}
+              currentUserId={user.id}
+              isCreator={isCreator}
+              fotosPublicas={event.fotosPublicas}
+            />
           )}
         </div>
       </main>

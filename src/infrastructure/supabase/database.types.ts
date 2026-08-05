@@ -70,6 +70,7 @@ export interface Database {
           valor_por_pessoa: number | null;
           valor_total_rateio: number | null;
           capa_url: string | null;
+          fotos_publicas: boolean;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],

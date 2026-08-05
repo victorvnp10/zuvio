@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { EventPhotosRepository } from "../../infrastructure/supabase/repositories/EventPhotosRepository";
 import { MediaStorageRepository } from "../../infrastructure/supabase/repositories/MediaStorageRepository";
-import type { EventPhoto, FotoVisibilidade } from "../../domain/entities/types";
+import type { EventPhoto } from "../../domain/entities/types";
 
 export function useEventPhotos(eventId: string | undefined) {
   const [photos, setPhotos] = useState<EventPhoto[]>([]);
@@ -27,14 +27,14 @@ export function useEventPhotos(eventId: string | undefined) {
   }, [reload]);
 
   const uploadPhoto = useCallback(
-    async (file: File, autorId: string, visibilidade: FotoVisibilidade) => {
+    async (file: File, autorId: string) => {
       if (!eventId) return;
       setIsUploading(true);
       setError(null);
       try {
         const path = MediaStorageRepository.photoPath(eventId, file);
         const url = await MediaStorageRepository.uploadFile(path, file);
-        await EventPhotosRepository.addPhoto(eventId, autorId, url, visibilidade);
+        await EventPhotosRepository.addPhoto(eventId, autorId, url);
         await reload();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível enviar a foto.");

@@ -3,9 +3,10 @@ import { Camera, Globe, Lock, Trash2, Heart, MessageCircle, Send } from "lucide-
 import { useEventPhotos } from "../../application/hooks/useEventPhotos";
 import { usePhotoComments } from "../../application/hooks/usePhotoComments";
 import { PhotoInteractionsRepository } from "../../infrastructure/supabase/repositories/PhotoInteractionsRepository";
+import { EventsRepository } from "../../infrastructure/supabase/repositories/EventsRepository";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { Avatar } from "./Avatar";
-import type { EventPhoto, FotoVisibilidade } from "../../domain/entities/types";
+import type { EventPhoto } from "../../domain/entities/types";
 
 function CommentAuthorName({ userId }: { userId: string }) {
   const { data: profile } = usePublicProfile(userId);
@@ -64,9 +65,6 @@ function PhotoPost({
         <p className="text-xs text-ink-300 flex-1">
           <span className="font-semibold text-ink-100">{autor?.nome ?? "..."}</span>
         </p>
-        <span className="text-ink-500">
-          {photo.visibilidade === "publica" ? <Globe size={12} /> : <Lock size={12} />}
-        </span>
         {(photo.autorId === currentUserId || isCreator) && (
           <button onClick={onRemove} aria-label="Remover foto">
             <Trash2 size={14} className="text-ink-600 hover:text-red-400" />
@@ -118,23 +116,44 @@ function PhotoPost({
   );
 }
 
+/**
+ * A visibilidade das fotos NÃO é mais escolha de quem posta — é
+ * decisão do organizador, no nível do evento inteiro
+ * (`event.fotosPublicas`, definida na criação/edição do evento). Aqui
+ * só mostramos essa decisão (com atalho pro organizador mudar sem
+ * precisar ir em "editar evento") e o botão de postar.
+ */
 export function EventPhotosSection({
   eventId,
   currentUserId,
   isCreator,
+  fotosPublicas,
+  onVisibilityChanged,
 }: {
   eventId: string;
   currentUserId: string;
   isCreator: boolean;
+  fotosPublicas: boolean;
+  onVisibilityChanged?: (fotosPublicas: boolean) => void;
 }) {
   const { photos, isUploading, error, uploadPhoto, removePhoto } = useEventPhotos(eventId);
-  const [visibilidade, setVisibilidade] = useState<FotoVisibilidade>("evento");
+  const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) uploadPhoto(file, currentUserId, visibilidade);
+    if (file) uploadPhoto(file, currentUserId);
     e.target.value = "";
+  };
+
+  const handleToggleVisibility = async () => {
+    setIsTogglingVisibility(true);
+    try {
+      await EventsRepository.update(eventId, { fotosPublicas: !fotosPublicas });
+      onVisibilityChanged?.(!fotosPublicas);
+    } finally {
+      setIsTogglingVisibility(false);
+    }
   };
 
   return (
@@ -144,24 +163,21 @@ export function EventPhotosSection({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex bg-ink-900 rounded-lg p-0.5 text-xs border border-ink-800">
+        {isCreator ? (
           <button
-            onClick={() => setVisibilidade("evento")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors ${
-              visibilidade === "evento" ? "bg-coral-500 text-ink-950" : "text-ink-400"
-            }`}
+            onClick={handleToggleVisibility}
+            disabled={isTogglingVisibility}
+            className="flex items-center gap-1.5 text-xs font-medium text-ink-300 bg-ink-900 border border-ink-800 px-2.5 py-1.5 rounded-lg disabled:opacity-50"
           >
-            <Lock size={12} /> Só do evento
+            {fotosPublicas ? <Globe size={12} /> : <Lock size={12} />}
+            {fotosPublicas ? "Públicas — mudar" : "Só participantes — mudar"}
           </button>
-          <button
-            onClick={() => setVisibilidade("publica")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors ${
-              visibilidade === "publica" ? "bg-coral-500 text-ink-950" : "text-ink-400"
-            }`}
-          >
-            <Globe size={12} /> Pública
-          </button>
-        </div>
+        ) : (
+          <span className="flex items-center gap-1.5 text-xs font-medium text-ink-500">
+            {fotosPublicas ? <Globe size={12} /> : <Lock size={12} />}
+            {fotosPublicas ? "Fotos públicas" : "Só para participantes"}
+          </span>
+        )}
 
         <button
           onClick={() => fileInputRef.current?.click()}

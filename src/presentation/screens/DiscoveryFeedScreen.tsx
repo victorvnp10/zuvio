@@ -5,6 +5,7 @@ import { useQuickCommit } from "../../application/hooks/useQuickCommit";
 import { useAuth } from "../../application/context/AuthContext";
 import { CommitmentsRepository } from "../../infrastructure/supabase/repositories/CommitmentsRepository";
 import { EventLikesRepository } from "../../infrastructure/supabase/repositories/EventLikesRepository";
+import { EventPhotosRepository } from "../../infrastructure/supabase/repositories/EventPhotosRepository";
 import { EventPostCard } from "../components/EventPostCard";
 import { CATEGORY_OPTIONS, CATEGORY_COVER } from "../components/CategoryBadge";
 import { BottomNav } from "../layout/BottomNav";
@@ -28,6 +29,20 @@ export function DiscoveryFeedScreen() {
     queryKey: ["feed-likes", eventIds],
     queryFn: () => EventLikesRepository.listForEvents(eventIds),
     enabled: eventIds.length > 0,
+  });
+
+  // Só entram no carrossel "reels" da capa os eventos com
+  // `fotosPublicas` (o organizador decidiu abrir pra todo mundo) — a
+  // RLS já filtra sozinha, mas evitamos a query à toa pros demais.
+  const publicPhotoEventIds = useMemo(
+    () => (events ?? []).filter((e) => e.fotosPublicas).map((e) => e.id),
+    [events]
+  );
+
+  const { data: photosByEvent } = useQuery({
+    queryKey: ["feed-public-photos", publicPhotoEventIds],
+    queryFn: () => EventPhotosRepository.listForEvents(publicPhotoEventIds),
+    enabled: publicPhotoEventIds.length > 0,
   });
 
   const { data: myCommitments } = useQuery({
@@ -126,6 +141,7 @@ export function DiscoveryFeedScreen() {
             event={event}
             participantIds={participantsByEvent.get(event.id) ?? []}
             likerIds={likesByEvent.get(event.id) ?? []}
+            photos={photosByEvent?.[event.id] ?? []}
             currentUserId={user!.id}
             isCommitted={myCommitmentByEvent.has(event.id)}
             isOwnEvent={event.criadorId === user?.id}

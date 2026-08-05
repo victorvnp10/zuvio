@@ -75,6 +75,7 @@ export function CreateEventScreen() {
   const [modoCustoColaborativo, setModoCustoColaborativo] = useState<ModoCustoColaborativo>("nenhum");
   const [valorPorPessoa, setValorPorPessoa] = useState<number>(0);
   const [valorTotalRateio, setValorTotalRateio] = useState<number>(0);
+  const [fotosPublicas, setFotosPublicas] = useState(false);
 
   const isLastStep = step === STEPS.length - 1;
 
@@ -105,6 +106,7 @@ export function CreateEventScreen() {
         tipoEvento === "colaborativo" && modoCustoColaborativo === "rateio_entre_presentes"
           ? valorTotalRateio
           : null,
+      fotosPublicas,
     });
 
     if (event && (modalidade === "amigos" || modalidade === "restrita") && user) {
@@ -450,6 +452,39 @@ export function CreateEventScreen() {
               )}
             </div>
           )}
+
+          <div>
+            <label className="block text-sm text-ink-400 mb-2">Fotos do evento</label>
+            <div className="space-y-2">
+              <button
+                onClick={() => setFotosPublicas(false)}
+                className={`w-full p-3 rounded-xl border text-left transition-colors ${
+                  !fotosPublicas ? "border-coral-500 bg-coral-500/10" : "border-ink-700"
+                }`}
+              >
+                <p className={`text-sm font-medium ${!fotosPublicas ? "text-ink-100" : "text-ink-300"}`}>
+                  Só para participantes
+                </p>
+                <p className="text-xs text-ink-500 mt-0.5">
+                  Só quem confirmou presença (e você) vê as fotos postadas.
+                </p>
+              </button>
+              <button
+                onClick={() => setFotosPublicas(true)}
+                className={`w-full p-3 rounded-xl border text-left transition-colors ${
+                  fotosPublicas ? "border-coral-500 bg-coral-500/10" : "border-ink-700"
+                }`}
+              >
+                <p className={`text-sm font-medium ${fotosPublicas ? "text-ink-100" : "text-ink-300"}`}>
+                  Visíveis para todos
+                </p>
+                <p className="text-xs text-ink-500 mt-0.5">
+                  Aparecem no feed principal — quem passar o dedo na capa vê as fotos, tipo
+                  reels, mesmo sem participar.
+                </p>
+              </button>
+            </div>
+          </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
         </div>

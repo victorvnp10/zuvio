@@ -93,6 +93,12 @@ export interface EventProposal {
   /** null = usa o gradiente por categoria como capa (ver CATEGORY_COVER). */
   capaUrl: string | null;
 
+  /** Decisão do ORGANIZADOR (não de quem posta) — vale pra todas as
+   * fotos do evento de uma vez: false = só quem participa (ou o
+   * organizador) vê; true = qualquer um vê, inclusive no carrossel
+   * "reels" da capa no feed principal. */
+  fotosPublicas: boolean;
+
   // tipoEvento === "pago"
   valorEntrada: number | null;
   linkPagamento: string | null;

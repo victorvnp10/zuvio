@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,7 +13,7 @@ import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
 import { ParticipantsModal } from "./ParticipantsModal";
 import { CATEGORY_COVER, CATEGORY_DOT } from "./CategoryBadge";
-import type { EventProposal } from "../../domain/entities/types";
+import type { EventProposal, EventPhoto } from "../../domain/entities/types";
 
 function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
   const shown = participantIds.slice(0, 3);
@@ -47,6 +47,7 @@ export function EventPostCard({
   isCommitted,
   isOwnEvent,
   likerIds,
+  photos,
   currentUserId,
   onQuickCommit,
   onQuickCancel,
@@ -57,6 +58,10 @@ export function EventPostCard({
   isCommitted: boolean;
   isOwnEvent: boolean;
   likerIds: string[];
+  /** Fotos públicas do evento (organizador liberou `fotosPublicas`) —
+   * quando existem, a capa vira um carrossel "reels": passar o dedo
+   * (ou tocar nas bordas) troca entre capa e as fotos. */
+  photos?: EventPhoto[];
   currentUserId: string;
   myCommitmentId?: string;
   onQuickCommit: () => void;
@@ -79,6 +84,41 @@ export function EventPostCard({
     event.id,
     currentUserId
   );
+
+  // Slide 0 = a capa; os seguintes são as fotos públicas do evento —
+  // exatamente o conceito de "reels" pedido: passar o dedo na capa pra
+  // ver as fotos, sem sair do feed.
+  const slides = event.fotosPublicas && photos && photos.length > 0 ? photos : [];
+  const hasReels = slides.length > 0;
+  const [slideIndex, setSlideIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const swipedRef = useRef(false);
+
+  const goToSlide = (i: number) => setSlideIndex(Math.max(0, Math.min(i, slides.length)));
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    swipedRef.current = false;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (Math.abs(e.touches[0].clientX - touchStartX.current) > 12) swipedRef.current = true;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!hasReels) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) goToSlide(slideIndex + 1);
+      else goToSlide(slideIndex - 1);
+    }
+  };
+  const handleImageClick = () => {
+    // Depois de arrastar pra trocar de foto, o toque que solta o dedo
+    // não deve navegar pro detalhe — só um toque de verdade navega.
+    if (swipedRef.current) return;
+    navigate(`/eventos/${event.id}`);
+  };
+
+  const currentPhoto = slideIndex > 0 ? slides[slideIndex - 1] : null;
 
   const handleLike = async () => {
     const wasLiked = isLiked;
@@ -110,25 +150,73 @@ export function EventPostCard({
       <div className="relative">
         {celebrating && <Confetti />}
         <button
-          onClick={() => navigate(`/eventos/${event.id}`)}
+          onClick={handleImageClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className={`w-full aspect-square flex items-end ${
-            event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
+            currentPhoto || event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
           }`}
           style={
-            event.capaUrl
+            currentPhoto
+              ? { backgroundImage: `url(${currentPhoto.fotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : event.capaUrl
               ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
               : undefined
           }
         >
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0) 40%, rgba(11,14,26,0.55) 100%)" }} />
-          {!event.capaUrl && (
+          {!currentPhoto && !event.capaUrl && (
             <span className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
               {cover.emoji}
             </span>
           )}
         </button>
 
-        <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+        {/* Barra segmentada estilo stories/reels — só aparece quando o
+            organizador liberou fotos públicas e existem fotos pra ver. */}
+        {hasReels && (
+          <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
+            {[0, ...slides.map((_, i) => i + 1)].map((i) => (
+              <div key={i} className="h-[3px] flex-1 rounded-full bg-ink-100/30 overflow-hidden">
+                <div
+                  className={`h-full bg-ink-100 rounded-full transition-all ${
+                    i === slideIndex ? "w-full" : "w-0"
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Zonas de toque nas bordas — igual reels/stories: tocar do
+            lado volta/avança, sem precisar arrastar. */}
+        {hasReels && (
+          <>
+            {slideIndex > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToSlide(slideIndex - 1);
+                }}
+                className="absolute left-0 top-8 bottom-8 w-1/4 z-10"
+                aria-label="Foto anterior"
+              />
+            )}
+            {slideIndex < slides.length && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToSlide(slideIndex + 1);
+                }}
+                className="absolute right-0 top-8 bottom-8 w-1/4 z-10"
+                aria-label="Próxima foto"
+              />
+            )}
+          </>
+        )}
+
+        <div className={`absolute left-3 right-3 flex items-start justify-between z-20 ${hasReels ? "top-7" : "top-3"}`}>
           <span className="inline-flex items-center gap-1.5 bg-ink-950/55 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
             {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
@@ -146,7 +234,7 @@ export function EventPostCard({
           </span>
         </div>
 
-        <div className="absolute bottom-3 left-3 flex items-center gap-2">
+        <div className="absolute bottom-3 left-3 flex items-center gap-2 z-20">
           <button
             onClick={(e) => {
               e.stopPropagation();

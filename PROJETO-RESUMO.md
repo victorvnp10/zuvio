@@ -411,6 +411,63 @@ chama não tem a lista à mão (caso do feed, que só carrega os IDs dos
 confirmados, sem status). O anel de quórum do `EventPostCard` virou
 `<button>` com o mesmo modal.
 
+---
+
+## 10. Visibilidade das fotos é decisão do organizador + carrossel "reels" na capa do feed
+
+Pedido: quem decide se as fotos postadas no evento são só pra quem
+participa ou pra todo mundo é o ORGANIZADOR (não mais cada pessoa
+escolhendo por foto, como era antes) — e se forem públicas, aparecem
+como um carrossel "reels" na capa do card do feed principal (passar o
+dedo do lado).
+
+### Mudança de regra (migração `0018_event_photo_visibility_control.sql`)
+
+- Nova coluna `events.fotos_publicas boolean default false`.
+- Política de SELECT de `event_photos` reescrita: em vez de checar
+  `visibilidade` da própria foto (linha antiga), checa a flag do
+  evento — `e.fotos_publicas or is_event_creator(...) or
+  is_event_participant(...)`.
+- A coluna antiga `event_photos.visibilidade` continua existindo no
+  schema (dado histórico), mas não é mais usada pra decidir permissão
+  — não valeu a pena migrar/remover dado existente só por isso agora.
+- `EventPhotosRepository.addPhoto` não recebe mais `visibilidade` como
+  parâmetro (deixou de ser escolha de quem posta).
+
+### UI
+
+- `CreateEventScreen.tsx` e `EditEventScreen.tsx`: novo toggle "Fotos
+  do evento" (Só participantes / Visíveis para todos), ao lado dos
+  outros campos do último passo — decisão tomada na criação, editável
+  depois.
+- `EventPhotosSection.tsx`: perdeu o seletor por-foto; agora mostra a
+  política atual do evento (cadeado/globo) e, só pro organizador, um
+  atalho pra trocar sem precisar ir em "editar evento"
+  (`EventsRepository.update(eventId, { fotosPublicas })` direto).
+
+### Carrossel "reels" no feed (`EventPostCard.tsx`)
+
+- `DiscoveryFeedScreen.tsx` busca em lote (`EventPhotosRepository.listForEvents`)
+  as fotos só dos eventos com `fotosPublicas` (a RLS filtra sozinha os
+  outros, mas evitamos a query à toa) e repassa por evento.
+- Na capa do card: slide 0 é sempre a capa normal; fotos públicas
+  entram como slides seguintes. Navegação por **arrastar o dedo**
+  (`touchstart`/`touchmove`/`touchend`, sem depender de
+  `preventDefault` — o app já lida com os problemas de listener
+  passivo do React documentados em outros lugares) OU **tocar nas
+  bordas** esquerda/direita (mesmo padrão do Instagram Stories/Reels).
+  Barra segmentada no topo mostra a posição atual. Depois de um
+  arrasto, o toque que solta o dedo não navega pro detalhe do evento —
+  só um toque de verdade (sem arrastar) navega, via uma ref
+  (`swipedRef`) que suprime a navegação nesse caso.
+- Sem carrossel (evento sem `fotosPublicas` ou sem fotos): comportamento
+  igual a antes, sem nenhuma mudança visual.
+
+### Build
+
+`tsc -b` + `npm run build` validados, sem erros. Migração `0018` não
+testada contra Supabase real (mesma ressalva das anteriores).
+
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).
 

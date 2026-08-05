@@ -67,6 +67,7 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   criadoEm: row.criado_em,
   tipoEvento: row.tipo_evento,
   capaUrl: row.capa_url,
+  fotosPublicas: row.fotos_publicas,
   valorEntrada: row.valor_entrada,
   linkPagamento: row.link_pagamento,
   modoListaColaborativa: row.modo_lista_colaborativa,
