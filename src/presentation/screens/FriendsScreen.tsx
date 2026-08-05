@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { useFriends } from "../../application/hooks/useFriends";
+import { useGroups } from "../../application/hooks/useGroups";
 import { useAuth } from "../../application/context/AuthContext";
 import { FriendsRepository } from "../../infrastructure/supabase/repositories/FriendsRepository";
 import { FriendRow } from "../components/FriendRow";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import type { Profile } from "../../domain/entities/types";
-import { Search, UserPlus, Plus, Trash2 } from "lucide-react";
+import { Search, UserPlus, Plus, Trash2, Users } from "lucide-react";
 
 function PendingRequestRow({
   friendshipId,
@@ -49,25 +51,28 @@ function PendingSentName({ userId }: { userId: string }) {
 }
 
 export function FriendsScreen() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const {
     friendships,
     pendingReceived,
     pendingSent,
-    groups,
+    groups: marcadores,
     error,
     sendRequest,
     acceptRequest,
     removeFriendship,
-    createGroup,
-    deleteGroup,
+    createGroup: createMarcador,
+    deleteGroup: deleteMarcador,
   } = useFriends();
+  const { groups: sharedGroups, isLoading: isLoadingGroups, createGroup } = useGroups();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
-  const [tab, setTab] = useState<"amigos" | "pedidos" | "grupos">("amigos");
+  const [newSharedGroupName, setNewSharedGroupName] = useState("");
+  const [tab, setTab] = useState<"amigos" | "pedidos" | "grupos" | "marcadores">("amigos");
 
   const handleSearch = async () => {
     if (!searchQuery.trim() || !user) return;
@@ -87,11 +92,11 @@ export function FriendsScreen() {
   return (
     <AppShell title="Amigos">
       <div className="flex gap-2 mb-4">
-        {(["amigos", "pedidos", "grupos"] as const).map((t) => (
+        {(["amigos", "pedidos", "grupos", "marcadores"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${
+            className={`flex-1 py-2 rounded-xl text-[13px] font-semibold capitalize transition-colors ${
               tab === t ? "bg-coral-500 text-ink-950" : "bg-ink-800 text-ink-400"
             }`}
           >
@@ -166,7 +171,7 @@ export function FriendsScreen() {
                   key={f.id}
                   friendUserId={otherId}
                   friendshipId={f.id}
-                  groups={groups}
+                  groups={marcadores}
                   onRemove={removeFriendship}
                 />
               );
@@ -226,18 +231,75 @@ export function FriendsScreen() {
 
       {tab === "grupos" && (
         <div className="space-y-4">
+          <p className="text-sm text-ink-400">
+            Grupos compartilhados, estilo WhatsApp: várias pessoas participam do mesmo grupo, e
+            quem cria é o administrador — pode adicionar/remover membros e gerar um link de
+            convite (compartilhável por WhatsApp ou e-mail).
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newSharedGroupName}
+              onChange={(e) => setNewSharedGroupName(e.target.value)}
+              placeholder="Nome do grupo (ex.: Pedal de sábado)"
+              className="flex-1 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
+            />
+            <button
+              onClick={async () => {
+                if (newSharedGroupName.trim()) {
+                  const created = await createGroup(newSharedGroupName.trim());
+                  if (created) setNewSharedGroupName("");
+                }
+              }}
+              className="bg-coral-500 text-ink-950 rounded-xl px-3"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+
+          {isLoadingGroups && <p className="text-sm text-ink-500">Carregando...</p>}
+
+          {!isLoadingGroups && sharedGroups.length === 0 && (
+            <p className="text-sm text-ink-500">
+              Você ainda não participa de nenhum grupo. Crie um acima.
+            </p>
+          )}
+
+          <div className="space-y-2">
+            {sharedGroups.map((group) => (
+              <button
+                key={group.id}
+                onClick={() => navigate(`/grupos/${group.id}`)}
+                className="w-full flex items-center gap-3 bg-ink-800/60 border border-ink-700 rounded-2xl p-4 text-left"
+              >
+                <span className="w-9 h-9 rounded-full bg-gradient-to-br from-ink-600 to-ink-800 flex items-center justify-center shrink-0">
+                  <Users size={16} className="text-ink-200" />
+                </span>
+                <p className="text-sm text-ink-100 truncate">{group.nome}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === "marcadores" && (
+        <div className="space-y-4">
+          <p className="text-sm text-ink-400">
+            Marcadores são pessoais — só você vê, servem pra organizar sua própria lista de
+            amigos (ex.: "Amigos do trabalho").
+          </p>
           <div className="flex gap-2">
             <input
               type="text"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder="Nome do novo grupo (ex.: Amigos do trabalho)"
+              placeholder="Nome do novo marcador (ex.: Amigos do trabalho)"
               className="flex-1 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
             />
             <button
               onClick={() => {
                 if (newGroupName.trim()) {
-                  createGroup(newGroupName.trim());
+                  createMarcador(newGroupName.trim());
                   setNewGroupName("");
                 }
               }}
@@ -248,20 +310,20 @@ export function FriendsScreen() {
           </div>
 
           <div className="space-y-2">
-            {groups.map((group) => (
+            {marcadores.map((marcador) => (
               <div
-                key={group.id}
+                key={marcador.id}
                 className="bg-ink-800/60 border border-ink-700 rounded-2xl p-4 flex items-center justify-between"
               >
                 <p className="text-sm text-ink-100">
-                  {group.nome}
-                  {group.isSystem && <span className="text-xs text-ink-500 ml-2">(padrão)</span>}
+                  {marcador.nome}
+                  {marcador.isSystem && <span className="text-xs text-ink-500 ml-2">(padrão)</span>}
                 </p>
-                {!group.isSystem && (
+                {!marcador.isSystem && (
                   <button
-                    onClick={() => deleteGroup(group.id)}
+                    onClick={() => deleteMarcador(marcador.id)}
                     className="text-ink-500 hover:text-red-400"
-                    aria-label="Excluir grupo"
+                    aria-label="Excluir marcador"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -271,8 +333,8 @@ export function FriendsScreen() {
           </div>
 
           <p className="text-xs text-ink-500">
-            Toque no ícone de pessoas ao lado de um amigo (na aba Amigos) para marcá-lo em um
-            ou mais grupos.
+            Toque no ícone de pessoas ao lado de um amigo (na aba Amigos) para marcá-lo em um ou
+            mais marcadores.
           </p>
         </div>
       )}

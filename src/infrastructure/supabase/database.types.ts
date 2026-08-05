@@ -263,6 +263,50 @@ export interface Database {
           friend_user_id: string;
         };
       };
+      groups: {
+        Row: {
+          id: string;
+          criador_id: string;
+          nome: string;
+          descricao: string | null;
+          foto_url: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          criador_id: string;
+          nome: string;
+          descricao?: string | null;
+          foto_url?: string | null;
+        };
+      };
+      group_members: {
+        Row: {
+          group_id: string;
+          user_id: string;
+          papel: "admin" | "membro";
+          entrou_em: string;
+        };
+        Insert: {
+          group_id: string;
+          user_id: string;
+          papel?: "admin" | "membro";
+        };
+      };
+      group_invites: {
+        Row: {
+          id: string;
+          group_id: string;
+          criado_por: string;
+          codigo: string;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          group_id: string;
+          criado_por: string;
+          ativo?: boolean;
+        };
+      };
     };
     Functions: {
       commit_to_event: {
@@ -284,6 +328,14 @@ export interface Database {
       confirm_payment: {
         Args: { p_event_id: string };
         Returns: void;
+      };
+      create_group: {
+        Args: { p_nome: string; p_descricao?: string | null };
+        Returns: Database["public"]["Tables"]["groups"]["Row"];
+      };
+      redeem_group_invite: {
+        Args: { p_codigo: string };
+        Returns: string;
       };
     };
   };

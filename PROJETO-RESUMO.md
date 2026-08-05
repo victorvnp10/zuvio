@@ -288,6 +288,79 @@ className="text-ink-200 font-bold">` (era `ink-300 font-medium`), botão
 Build validado (`tsc -b` + `npm run build`) depois de todas as
 correções, sem erros.
 
+---
+
+## 8. Grupos compartilhados (estilo WhatsApp) — feature nova
+
+Pedido: além dos marcadores pessoais (`friend_groups` — "Melhores
+Amigos" etc., visíveis só pra quem os criou), o usuário quer **grupos
+compartilhados entre várias pessoas**, como grupo do WhatsApp: qualquer
+usuário cria e vira administrador, pode adicionar/remover membros
+diretamente OU gerar um link de convite reutilizável (compartilhável
+por e-mail e WhatsApp) — quem abrir o link entra direto no grupo
+(cadastra-se antes, se ainda não tiver conta). Sem hierarquia
+"comunidade → grupos" — isso foi perguntado e descartado
+explicitamente pelo usuário: ter conta no Zuvio já é "estar na
+comunidade", o grupo é a única entidade nova.
+
+### Schema (migração `0016_shared_groups.sql`)
+
+- `groups` — id, criador_id, nome, descricao, foto_url
+- `group_members` — group_id + user_id + papel (`admin`/`membro`), PK composta
+- `group_invites` — link reutilizável (`ativo` boolean; revogar =
+  `ativo=false` + gerar outro, igual "redefinir link" do WhatsApp);
+  código em **hex** (não base64, pra nunca gerar `/` ou `+` que
+  quebrariam a URL — diferente do `invites` de evento, que usa base64)
+- Funções `security definer`: `is_group_member`, `is_group_admin`
+  (evitam recursão de RLS, mesmo padrão de `are_friends`/
+  `is_event_creator`), `create_group` (cria o grupo + já insere o
+  criador como admin, atômico), `redeem_group_invite` (resgata o
+  convite, `on conflict do nothing` se a pessoa já for membro)
+
+### Código
+
+- `domain/entities/types.ts`: `SharedGroup`, `GroupMember`, `GroupInvite`
+- `infrastructure/supabase/repositories/GroupsRepository.ts` — CRUD completo
+- `application/hooks/useGroups.ts` (lista + criar) e
+  `useGroupDetail.ts` (membros, promover/rebaixar admin, adicionar/
+  remover membro, gerar/regenerar convite, sair/excluir grupo)
+- `presentation/components/ShareLinkSection.tsx` — **componente novo,
+  genérico**: copiar + WhatsApp (`wa.me`) + e-mail (`mailto:`). Também
+  usado para simplificar `InviteLinkSection.tsx` (convite de evento),
+  que antes só tinha "copiar" — agora ganha WhatsApp/e-mail também.
+- `presentation/screens/GroupsScreen.tsx` (lista + criar),
+  `GroupDetailScreen.tsx` (membros, convite, adicionar via busca de
+  perfil, promover/remover, sair/excluir),
+  `GroupInviteRedeemScreen.tsx` (mesmo padrão do
+  `InviteRedeemScreen` de evento, com `PENDING_GROUP_INVITE_KEY`
+  próprio em sessionStorage)
+- `App.tsx`: rotas `/grupos`, `/grupos/:groupId`,
+  `/grupos/convite/:codigo` (pública, fora do `RequireAuth`) +
+  checagem de convite pendente de grupo em `RequireAuth` (mesma lógica
+  do convite de evento, chave separada)
+- `FriendsScreen.tsx`: agora tem 4 abas — **"grupos"** (nova, os
+  grupos compartilhados) e **"marcadores"** (a antiga aba "grupos",
+  renomeada — são os `friend_groups` pessoais; só mudou o rótulo na
+  UI, a tabela do banco continua se chamando `friend_groups`)
+
+### Não implementado nesta leva (próximos passos)
+
+1. Nenhuma integração ainda entre grupo compartilhado e criação de
+   evento (ex.: usar um grupo como modalidade "Amigos" de um evento,
+   parecido com o que já existe pra `friend_groups` via
+   `FriendGroupSelector`) — não foi pedido, mas é o próximo passo
+   natural pra "facilitar interações recorrentes no grupo específico".
+2. Sem foto de capa do grupo (`foto_url` existe na tabela, mas não tem
+   upload na UI ainda).
+3. Sem chat/feed do grupo em si — hoje o grupo só organiza quem
+   pertence a ele; qualquer interação (chat, eventos) ainda acontece
+   nos eventos, não dentro do grupo.
+4. Build validado (`tsc -b` + `npm run build`), mas as políticas de
+   RLS/funções SQL não foram testadas contra um projeto Supabase real
+   nesta sessão (sem acesso a rede pra rodar migração de verdade) —
+   revisar com atenção ao rodar `0016` pela primeira vez, especialmente
+   as políticas de `group_invites`/`group_members`.
+
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).
 

@@ -194,3 +194,34 @@ export interface FriendGroup {
   isSystem: boolean;
   criadoEm: string;
 }
+
+export type GroupMemberRole = "admin" | "membro";
+
+/** Grupo compartilhado estilo WhatsApp: várias pessoas pertencem ao
+ * mesmo grupo (diferente de FriendGroup, que é um marcador pessoal na
+ * lista de amigos de um único usuário). Quem cria vira admin; admin
+ * adiciona/remove membros diretamente ou via link de convite. */
+export interface SharedGroup {
+  id: string;
+  criadorId: string;
+  nome: string;
+  descricao: string | null;
+  fotoUrl: string | null;
+  criadoEm: string;
+}
+
+export interface GroupMember {
+  groupId: string;
+  userId: string;
+  papel: GroupMemberRole;
+  entrouEm: string;
+}
+
+export interface GroupInvite {
+  id: string;
+  groupId: string;
+  criadoPor: string;
+  codigo: string;
+  ativo: boolean;
+  criadoEm: string;
+}

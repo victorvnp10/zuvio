@@ -9,6 +9,9 @@ import type {
   FriendGroup,
   Profile,
   Rating,
+  SharedGroup,
+  GroupMember,
+  GroupInvite,
 } from "../../domain/entities/types";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -21,6 +24,9 @@ type FriendshipRow = Database["public"]["Tables"]["friendships"]["Row"];
 type FriendGroupRow = Database["public"]["Tables"]["friend_groups"]["Row"];
 type CollaborativeItemRow = Database["public"]["Tables"]["collaborative_items"]["Row"];
 type EventPhotoRow = Database["public"]["Tables"]["event_photos"]["Row"];
+type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
+type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
+type GroupInviteRow = Database["public"]["Tables"]["group_invites"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -127,5 +133,30 @@ export const toEventPhoto = (row: EventPhotoRow): EventPhoto => ({
   autorId: row.autor_id,
   fotoUrl: row.foto_url,
   visibilidade: row.visibilidade,
+  criadoEm: row.criado_em,
+});
+
+export const toSharedGroup = (row: GroupRow): SharedGroup => ({
+  id: row.id,
+  criadorId: row.criador_id,
+  nome: row.nome,
+  descricao: row.descricao,
+  fotoUrl: row.foto_url,
+  criadoEm: row.criado_em,
+});
+
+export const toGroupMember = (row: GroupMemberRow): GroupMember => ({
+  groupId: row.group_id,
+  userId: row.user_id,
+  papel: row.papel,
+  entrouEm: row.entrou_em,
+});
+
+export const toGroupInvite = (row: GroupInviteRow): GroupInvite => ({
+  id: row.id,
+  groupId: row.group_id,
+  criadoPor: row.criado_por,
+  codigo: row.codigo,
+  ativo: row.ativo,
   criadoEm: row.criado_em,
 });

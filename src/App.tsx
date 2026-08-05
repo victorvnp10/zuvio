@@ -9,7 +9,13 @@ import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
 import { FriendsScreen } from "./presentation/screens/FriendsScreen";
+import { GroupsScreen } from "./presentation/screens/GroupsScreen";
+import { GroupDetailScreen } from "./presentation/screens/GroupDetailScreen";
 import { InviteRedeemScreen, PENDING_INVITE_KEY } from "./presentation/screens/InviteRedeemScreen";
+import {
+  GroupInviteRedeemScreen,
+  PENDING_GROUP_INVITE_KEY,
+} from "./presentation/screens/GroupInviteRedeemScreen";
 import { isProfileComplete } from "./domain/valueObjects/Eligibility";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -45,6 +51,12 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     return <Navigate to={`/convite/${pendingInviteCode}`} replace />;
   }
 
+  // Mesma lógica, para convite de GRUPO (link de convite de grupo).
+  const pendingGroupInviteCode = sessionStorage.getItem(PENDING_GROUP_INVITE_KEY);
+  if (pendingGroupInviteCode && !location.pathname.startsWith("/grupos/convite/")) {
+    return <Navigate to={`/grupos/convite/${pendingGroupInviteCode}`} replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -54,6 +66,7 @@ export default function App() {
       <Routes>
         <Route path="/entrar" element={<AuthScreen />} />
         <Route path="/convite/:codigo" element={<InviteRedeemScreen />} />
+        <Route path="/grupos/convite/:codigo" element={<GroupInviteRedeemScreen />} />
         <Route
           path="/completar-perfil"
           element={
@@ -107,6 +120,22 @@ export default function App() {
           element={
             <RequireAuth>
               <FriendsScreen />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/grupos"
+          element={
+            <RequireAuth>
+              <GroupsScreen />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/grupos/:groupId"
+          element={
+            <RequireAuth>
+              <GroupDetailScreen />
             </RequireAuth>
           }
         />
