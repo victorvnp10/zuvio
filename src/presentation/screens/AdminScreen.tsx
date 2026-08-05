@@ -4,6 +4,54 @@ import { AppShell } from "../layout/AppShell";
 import { AdminRepository } from "../../infrastructure/supabase/repositories/AdminRepository";
 import { useAdminCategories } from "../../application/hooks/useAdminCategories";
 
+/** Conjunto curado — cobre os temas mais comuns de evento sem virar um
+ * seletor de emoji genérico (a categoria é sobre o tipo de atividade,
+ * não "qualquer emoji que exista"). */
+const ICON_OPTIONS = [
+  "🏃", "⚽", "🏀", "🎾", "🏊", "🚴", "🧘", "🏕️",
+  "✈️", "🌊", "🎨", "🎭", "🎬", "🎮", "🎵", "🎤",
+  "☕", "🍜", "🍕", "🍻", "📚", "💻", "🛍️", "🐾",
+  "🌱", "🎲", "📷", "💃", "🎉", "✨",
+];
+
+function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-16 h-[52px] bg-ink-900 border border-ink-700 rounded-xl text-center text-lg hover:border-coral-500"
+        aria-label="Escolher ícone"
+      >
+        {value}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute z-40 top-full left-0 mt-2 w-64 bg-ink-800 border border-ink-700 rounded-xl p-2 grid grid-cols-6 gap-1 shadow-xl">
+            {ICON_OPTIONS.map((icon) => (
+              <button
+                key={icon}
+                type="button"
+                onClick={() => {
+                  onChange(icon);
+                  setOpen(false);
+                }}
+                className={`text-lg p-1.5 rounded-lg hover:bg-ink-700 ${
+                  icon === value ? "bg-coral-500/20 ring-1 ring-coral-500" : ""
+                }`}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-2xl p-4">
@@ -109,7 +157,7 @@ function StatsSection() {
 function CategoriesSection() {
   const { data: categories, isLoading, createCategory, setAtivo, isSubmitting, error } = useAdminCategories();
   const [nome, setNome] = useState("");
-  const [emoji, setEmoji] = useState("🏷️");
+  const [emoji, setEmoji] = useState(ICON_OPTIONS[0]);
   const [cor, setCor] = useState("#12E0B2");
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -118,7 +166,7 @@ function CategoriesSection() {
     const ok = await createCategory({ nome, emoji, cor, ordem });
     if (ok) {
       setNome("");
-      setEmoji("🏷️");
+      setEmoji(ICON_OPTIONS[0]);
       setCor("#12E0B2");
     }
   };
@@ -165,14 +213,7 @@ function CategoriesSection() {
       <form onSubmit={handleCreate} className="bg-ink-800/40 border border-ink-700 rounded-2xl p-4 space-y-3">
         <p className="text-sm font-semibold text-ink-200">Nova categoria</p>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value)}
-            maxLength={4}
-            className="w-16 bg-ink-900 border border-ink-700 rounded-xl p-3 text-center text-lg"
-            aria-label="Emoji"
-          />
+          <IconPicker value={emoji} onChange={setEmoji} />
           <input
             type="text"
             value={nome}
