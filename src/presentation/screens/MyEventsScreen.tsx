@@ -9,7 +9,8 @@ import { useMyEvents } from "../../application/hooks/useMyEvents";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import { QuorumBar } from "../components/QuorumMeter";
-import { CategoryBadge, CATEGORY_COVER } from "../components/CategoryBadge";
+import { CATEGORY_COVER, CATEGORY_DOT } from "../components/CategoryBadge";
+import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import type { EventProposal } from "../../domain/entities/types";
 
 function EventCard({
@@ -34,6 +35,9 @@ function EventCard({
   // como um compromisso firmado — dá para excluir de verdade. Depois
   // disso, só cancelar (mantém o histórico para quem já confirmou).
   const canHardDelete = event.status === "aberto";
+  const now = new Date().toISOString();
+  const countdown = getCountdownLabel(event.dataHora, now);
+  const urgent = isUrgent(event.dataHora, now);
 
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-3xl overflow-hidden">
@@ -49,14 +53,33 @@ function EventCard({
           }
         >
           {!event.capaUrl && <span className="text-3xl opacity-90">{cover.emoji}</span>}
-          <div className="absolute top-2 left-2">
-            <CategoryBadge categoria={event.categoria} />
-          </div>
-          {isCancelled && (
-            <span className="absolute top-2 right-2 text-xs font-semibold bg-ink-900/80 text-red-400 px-2 py-0.5 rounded-full">
-              Cancelado
+
+          {/* Selos flutuantes — mesmo conceito do feed/detalhe, só que
+              compactos (sem faixa perfurada, sem confete: é uma lista
+              de gestão, não o cartão de "convite"). */}
+          <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 bg-ink-950/60 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
+              {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
             </span>
-          )}
+            {isCancelled ? (
+              <span className="text-[10px] font-semibold bg-ink-900/80 text-red-400 px-2 py-0.5 rounded-full">
+                Cancelado
+              </span>
+            ) : (
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${
+                  quorum.quorumAtingido
+                    ? "bg-quorum-500 text-ink-950"
+                    : urgent
+                    ? "bg-coral-500 text-ink-950"
+                    : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
+                }`}
+              >
+                {quorum.quorumAtingido ? "CONFIRMADO 🔓" : countdown}
+              </span>
+            )}
+          </div>
         </div>
         <div className="p-4 space-y-2">
           <h3 className="font-display font-semibold text-ink-100">{event.titulo}</h3>

@@ -82,3 +82,55 @@ header {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Assinatura visual do Zuvio ("O Convite"): a divisória perfurada de
+ * canhoto de ingresso, entre a imagem e o texto do card. Os dois
+ * recortes circulares nas bordas são o que faz parecer um ingresso de
+ * verdade, não só uma linha tracejada qualquer.
+ */
+.ticket-stub-divider {
+  position: relative;
+  height: 1px;
+  background-image: linear-gradient(to right, var(--color-ink-700) 0 6px, transparent 6px 12px);
+  background-size: 12px 1px;
+}
+.ticket-stub-divider::before,
+.ticket-stub-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: var(--color-ink-900);
+  border-radius: 9999px;
+  transform: translateY(-50%);
+}
+.ticket-stub-divider::before {
+  left: -10px;
+}
+.ticket-stub-divider::after {
+  right: -10px;
+}
+
+/* Confete: só toca no instante em que o quórum é atingido (ver
+   useQuorumCelebration) — um momento orquestrado, não decoração solta. */
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 10px;
+  opacity: 0.9;
+  animation: confetti-fall 1.6s ease-in forwards;
+  pointer-events: none;
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(280px) rotate(260deg);
+    opacity: 0;
+  }
+}

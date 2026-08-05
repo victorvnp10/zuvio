@@ -16,9 +16,14 @@ import {
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { useEventLikeState } from "../../application/hooks/useEventLikeState";
+import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebration";
 import { useAuth } from "../../application/context/AuthContext";
+import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { QuorumMeter } from "../components/QuorumMeter";
-import { CategoryBadge, CATEGORY_COVER } from "../components/CategoryBadge";
+import { CATEGORY_COVER, CATEGORY_DOT } from "../components/CategoryBadge";
+import { Avatar } from "../components/Avatar";
+import { Confetti } from "../components/Confetti";
+import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { ChatPanel } from "../components/ChatPanel";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
@@ -50,6 +55,8 @@ export function EventDetailScreen() {
   } = useEventDetail(eventId);
 
   const like = useEventLikeState(eventId ?? "", user?.id ?? "");
+  const celebrating = useQuorumCelebration(quorum?.quorumAtingido ?? false);
+  const { data: organizador } = usePublicProfile(event?.criadorId);
 
   if (isLoading || !event || !quorum || !user) {
     return (
@@ -114,8 +121,10 @@ export function EventDetailScreen() {
           </div>
         )}
 
-        {/* Mesmo conceito do feed: imagem com o anel de quórum sobreposto */}
-        <div className="relative">
+        {/* Mesmo conceito do feed: imagem com selos flutuando e o anel
+            de quórum sempre no mesmo canto — a assinatura do Zuvio. */}
+        <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden">
+          {celebrating && <Confetti />}
           <div
             className={`w-full aspect-square flex items-center justify-center ${
               event.capaUrl ? "" : `bg-gradient-to-br ${cover.gradient}`
@@ -127,22 +136,52 @@ export function EventDetailScreen() {
             }
           >
             {!event.capaUrl && <span className="text-7xl opacity-90">{cover.emoji}</span>}
+            <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
           </div>
+
           {!isCancelled && (
-            <div className="absolute top-3 left-3 bg-ink-900/70 backdrop-blur-sm rounded-full p-1">
-              <QuorumMeter quorum={quorum} size={48} />
-            </div>
+            <>
+              <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_DOT[event.categoria] }} />
+                  {event.categoria.charAt(0).toUpperCase() + event.categoria.slice(1)}
+                </span>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+                    quorum.quorumAtingido
+                      ? "bg-quorum-500 text-ink-950"
+                      : isUrgent(event.dataHora, new Date().toISOString())
+                      ? "bg-coral-500 text-ink-950"
+                      : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
+                  }`}
+                >
+                  {quorum.quorumAtingido ? "CONFIRMADO 🔓" : getCountdownLabel(event.dataHora, new Date().toISOString())}
+                </span>
+              </div>
+              <div className="absolute bottom-3 left-3">
+                <div className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5">
+                  <QuorumMeter quorum={quorum} size={52} />
+                </div>
+              </div>
+            </>
           )}
-          <div className="absolute top-3 right-3 flex gap-1.5">
-            <CategoryBadge categoria={event.categoria} />
-          </div>
+        </div>
+
+        {/* Divisória de canhoto de ingresso */}
+        {!isCancelled && <div className="ticket-stub-divider mx-4 my-3" />}
+
+        {/* Título em destaque, logo abaixo da imagem */}
+        <div className="px-4">
+          <h2 className="font-display font-semibold text-xl text-ink-100 leading-snug">
+            {event.titulo}
+          </h2>
         </div>
 
         {/* Ações: curtir, comentar (rola até o chat/fotos), compartilhar, participar */}
         <div className="flex items-center gap-4 px-4">
           <button onClick={like.toggle} disabled={like.isPending} aria-label="Curtir">
             <Heart
-              size={28}
+              size={26}
               strokeWidth={1.8}
               className={like.isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"}
             />
@@ -153,10 +192,10 @@ export function EventDetailScreen() {
             }
             aria-label="Ir para comentários"
           >
-            <MessageCircle size={28} strokeWidth={1.8} className="text-ink-200" />
+            <MessageCircle size={26} strokeWidth={1.8} className="text-ink-200" />
           </button>
           <button onClick={handleShare} aria-label="Compartilhar">
-            <Share2 size={26} strokeWidth={1.8} className="text-ink-200" />
+            <Share2 size={24} strokeWidth={1.8} className="text-ink-200" />
           </button>
 
           {!isCancelled && !isCreator && (
@@ -198,6 +237,14 @@ export function EventDetailScreen() {
             )}
           </p>
         )}
+
+        {/* Anfitrião, embaixo — assinatura de quem organiza */}
+        <div className="flex items-center gap-1.5 px-4 pt-1">
+          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={18} />
+          <span className="text-xs text-ink-500">
+            organizado por <span className="text-ink-300 font-medium">{organizador?.nome ?? "..."}</span>
+          </span>
+        </div>
 
         {actionError && <p className="text-sm text-red-400 px-4">{actionError}</p>}
 

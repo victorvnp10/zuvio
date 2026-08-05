@@ -63,7 +63,9 @@ export function DiscoveryFeedScreen() {
   return (
     <div className="min-h-screen bg-ink-900 text-ink-100 pb-16">
       <header className="sticky top-0 z-20 bg-ink-900/90 backdrop-blur-md border-b border-ink-800 px-4 py-3">
-        <h1 className="font-display font-bold text-2xl">Zuvio</h1>
+        <h1 className="font-display font-bold text-2xl tracking-tight">
+          Zuv<span className="text-coral-500">i</span>o
+        </h1>
       </header>
 
       {/* Categorias em formato de "stories" */}

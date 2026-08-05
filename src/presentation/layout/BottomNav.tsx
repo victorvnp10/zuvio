@@ -40,10 +40,10 @@ export function BottomNav() {
 
         <NavLink
           to="/criar"
-          className="flex items-center justify-center w-full h-full text-ink-100"
+          className="flex items-center justify-center w-full h-full"
         >
-          <span className="border-2 border-ink-200 rounded-lg p-1">
-            <Plus size={20} strokeWidth={2.4} />
+          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center">
+            <Plus size={20} strokeWidth={2.6} className="text-ink-950" />
           </span>
         </NavLink>
 
