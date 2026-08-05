@@ -244,6 +244,18 @@ este documento.
 2. Nenhuma migração de banco pendente relacionada a esta identidade
    visual.
 
+### Conferência contra o protótipo HTML aprovado (`proposta-identidade-visual.html`)
+
+O protótipo estático foi reenviado e conferido linha a linha contra a
+implementação React. Único gap encontrado e corrigido: a pilha de
+avatares confirmados (`ConfirmedStack` em `EventPostCard.tsx`) não
+mostrava o selo **"+N"** de overflow quando há mais de 3 confirmados
+(visível no protótipo no card "5/5" — M, J, P, +2). Corrigido: agora
+renderiza um círculo `+{extra}` do mesmo tamanho (20px) ao final da
+pilha quando `participantIds.length > 3`. Resto já batia: wordmark
+"Zuv**i**o" com o "i" em coral, anel de quórum com label X/Y, divisória
+perfurada, selos flutuantes, confete na transição.
+
 **Nenhuma migração de banco nova é necessária pra essa parte** — é só
 código do app (CSS + componentes React).
 

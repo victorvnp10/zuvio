@@ -16,11 +16,17 @@ import type { EventProposal } from "../../domain/entities/types";
 
 function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
   const shown = participantIds.slice(0, 3);
+  const extra = participantIds.length - shown.length;
   return (
     <div className="flex -space-x-2">
       {shown.map((id) => (
         <ParticipantDot key={id} userId={id} />
       ))}
+      {extra > 0 && (
+        <div className="ring-2 ring-ink-900 rounded-full w-5 h-5 flex items-center justify-center bg-ink-700 text-[9px] font-bold text-ink-200">
+          +{extra}
+        </div>
+      )}
     </div>
   );
 }
