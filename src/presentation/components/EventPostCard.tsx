@@ -8,9 +8,11 @@ import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTimi
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { useEventLikeToggle } from "../../application/hooks/useEventLikeToggle";
 import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebration";
+import { usePresenceCelebration } from "../../application/hooks/usePresenceCelebration";
 import { Avatar } from "./Avatar";
 import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
+import { PresenceCelebration } from "./PresenceCelebration";
 import { ParticipantsModal } from "./ParticipantsModal";
 import { categoryGradientStyle } from "./CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
@@ -65,7 +67,7 @@ export function EventPostCard({
   photos?: EventPhoto[];
   currentUserId: string;
   myCommitmentId?: string;
-  onQuickCommit: () => void;
+  onQuickCommit: () => Promise<boolean>;
   onQuickCancel: () => void;
   isPending: boolean;
 }) {
@@ -78,6 +80,7 @@ export function EventPostCard({
   const countdown = getCountdownLabel(event.dataHora, now);
   const urgent = isUrgent(event.dataHora, now);
   const celebrating = useQuorumCelebration(quorum.quorumAtingido);
+  const { celebrating: presenceCelebrating, celebrate } = usePresenceCelebration();
 
   const [isLiked, setIsLiked] = useState(likerIds.includes(currentUserId));
   const [likeCount, setLikeCount] = useState(likerIds.length);
@@ -151,6 +154,7 @@ export function EventPostCard({
           sempre no mesmo canto — a assinatura visual do Zuvio. */}
       <div className="relative">
         {celebrating && <Confetti />}
+        {presenceCelebrating && <PresenceCelebration />}
         <button
           onClick={handleImageClick}
           onTouchStart={handleTouchStart}
@@ -168,7 +172,7 @@ export function EventPostCard({
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0) 40%, rgba(11,14,26,0.55) 100%)" }} />
           {!currentPhoto && !event.capaUrl && (
             <span className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
-              {categoria.emoji}
+              <span className="category-icon-float">{categoria.emoji}</span>
             </span>
           )}
         </button>
@@ -250,8 +254,17 @@ export function EventPostCard({
       </div>
 
       {/* Divisória de canhoto de ingresso — sem margem lateral, os
-          recortes cortam nas bordas do card (overflow hidden acima). */}
-      <div className="ticket-stub-divider" />
+          recortes cortam nas bordas do card (overflow hidden acima).
+          O código impresso sobre a perfuração reforça que isto é um
+          ticket de verdade, não só um post de feed. */}
+      <div className="relative">
+        <div className="ticket-stub-divider" />
+        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="bg-ink-900 px-2 text-[9px] font-mono tracking-[0.2em] text-ink-600">
+            ZUV·{event.id.slice(0, 6).toUpperCase()}
+          </span>
+        </span>
+      </div>
 
       <div className="pt-3.5 px-4 pb-4">
         {/* Título em destaque, logo abaixo da imagem */}
@@ -281,10 +294,14 @@ export function EventPostCard({
           </button>
 
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              if (isCommitted) onQuickCancel();
-              else onQuickCommit();
+              if (isCommitted) {
+                onQuickCancel();
+              } else {
+                const ok = await onQuickCommit();
+                if (ok) celebrate();
+              }
             }}
             disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
             className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${

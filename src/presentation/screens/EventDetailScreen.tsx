@@ -18,6 +18,7 @@ import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
 import { useEventLikeState } from "../../application/hooks/useEventLikeState";
 import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebration";
+import { usePresenceCelebration } from "../../application/hooks/usePresenceCelebration";
 import { useAuth } from "../../application/context/AuthContext";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { QuorumMeter } from "../components/QuorumMeter";
@@ -25,6 +26,7 @@ import { categoryGradientStyle } from "../components/CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
+import { PresenceCelebration } from "../components/PresenceCelebration";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { ChatPanel } from "../components/ChatPanel";
 import { AnnouncementsSection } from "../components/AnnouncementsSection";
@@ -61,6 +63,7 @@ export function EventDetailScreen() {
 
   const like = useEventLikeState(eventId ?? "", user?.id ?? "");
   const celebrating = useQuorumCelebration(quorum?.quorumAtingido ?? false);
+  const { celebrating: presenceCelebrating, celebrate } = usePresenceCelebration();
   const { data: organizador } = usePublicProfile(event?.criadorId);
   const { data: categories } = useCategories();
 
@@ -88,6 +91,11 @@ export function EventDetailScreen() {
     } else {
       await navigator.clipboard.writeText(url);
     }
+  };
+
+  const handleCommitClick = async () => {
+    const ok = await handleCommit();
+    if (ok) celebrate();
   };
 
   return (
@@ -131,6 +139,7 @@ export function EventDetailScreen() {
             de quórum sempre no mesmo canto — a assinatura do Zuvio. */}
         <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden">
           {celebrating && <Confetti />}
+          {presenceCelebrating && <PresenceCelebration />}
           <div
             className="w-full aspect-square flex items-center justify-center"
             style={
@@ -139,7 +148,9 @@ export function EventDetailScreen() {
                 : categoryGradientStyle(categoria.cor)
             }
           >
-            {!event.capaUrl && <span className="text-7xl opacity-90">{categoria.emoji}</span>}
+            {!event.capaUrl && (
+              <span className="category-icon-float text-7xl opacity-90">{categoria.emoji}</span>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
           </div>
 
@@ -175,8 +186,19 @@ export function EventDetailScreen() {
           )}
         </div>
 
-        {/* Divisória de canhoto de ingresso */}
-        {!isCancelled && <div className="ticket-stub-divider mx-4 my-3" />}
+        {/* Divisória de canhoto de ingresso, com o "código do bilhete"
+            impresso sobre a perfuração — reforça que o card é um
+            ticket de verdade, não só um post de feed. */}
+        {!isCancelled && (
+          <div className="relative mx-4 my-3">
+            <div className="ticket-stub-divider" />
+            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="bg-ink-900 px-2 text-[9px] font-mono tracking-[0.2em] text-ink-600">
+                ZUV·{event.id.slice(0, 6).toUpperCase()}
+              </span>
+            </span>
+          </div>
+        )}
 
         {/* Título em destaque, logo abaixo da imagem */}
         <div className="px-4">
@@ -208,7 +230,7 @@ export function EventDetailScreen() {
 
           {!isCancelled && !isCreator && (
             <button
-              onClick={isCommitted ? handleCancel : handleCommit}
+              onClick={isCommitted ? handleCancel : handleCommitClick}
               disabled={isActing || (!isCommitted && quorum.vagasEsgotadas)}
               className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
                 isCommitted

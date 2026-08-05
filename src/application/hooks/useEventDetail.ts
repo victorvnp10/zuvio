@@ -50,7 +50,7 @@ export function useEventDetail(eventId: string | undefined) {
   }, [eventId, queryClient]);
 
   const runAction = useCallback(
-    async (action: () => Promise<void>) => {
+    async (action: () => Promise<void>): Promise<boolean> => {
       setActionError(null);
       setIsActing(true);
       try {
@@ -59,8 +59,10 @@ export function useEventDetail(eventId: string | undefined) {
           queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
           queryClient.invalidateQueries({ queryKey: ["event-commitments", eventId] }),
         ]);
+        return true;
       } catch (err) {
         setActionError(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
+        return false;
       } finally {
         setIsActing(false);
       }
@@ -69,7 +71,7 @@ export function useEventDetail(eventId: string | undefined) {
   );
 
   const handleCommit = useCallback(() => {
-    if (!eventId) return;
+    if (!eventId) return Promise.resolve(false);
     return runAction(async () => {
       const commitment = await CommitmentsRepository.commit(eventId);
       // Sincronização com a Agenda do Google é "melhor esforço": se a

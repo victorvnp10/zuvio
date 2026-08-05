@@ -14,15 +14,17 @@ export function useQuickCommit() {
   }, [queryClient]);
 
   const commit = useCallback(
-    async (eventId: string) => {
+    async (eventId: string): Promise<boolean> => {
       setPendingEventId(eventId);
       setError(null);
       try {
         const commitment = await CommitmentsRepository.commit(eventId);
         GoogleCalendarRepository.syncEvent(commitment.id).catch(() => {});
         invalidateFeed();
+        return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível confirmar presença.");
+        return false;
       } finally {
         setPendingEventId(null);
       }

@@ -52,7 +52,9 @@ function EventCard({
               : categoryGradientStyle(categoria.cor)
           }
         >
-          {!event.capaUrl && <span className="text-3xl opacity-90">{categoria.emoji}</span>}
+          {!event.capaUrl && (
+            <span className="category-icon-float text-3xl opacity-90">{categoria.emoji}</span>
+          )}
 
           {/* Selos flutuantes — mesmo conceito do feed/detalhe, só que
               compactos (sem faixa perfurada, sem confete: é uma lista
