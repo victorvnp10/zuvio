@@ -324,6 +324,10 @@ export interface Database {
       };
     };
     Functions: {
+      get_own_profile: {
+        Args: Record<string, never>;
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
+      };
       commit_to_event: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Tables"]["commitments"]["Row"];

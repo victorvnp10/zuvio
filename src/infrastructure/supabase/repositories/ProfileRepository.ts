@@ -1,11 +1,20 @@
 import { supabase } from "../client";
 import { toProfile } from "../mappers";
 import type { Profile } from "../../../domain/entities/types";
+import type { Database } from "../database.types";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const ProfileRepository = {
-  /** Perfil completo (com data de nascimento) — só para o dono ver o próprio. */
-  async getOwn(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  /**
+   * Perfil completo (com data de nascimento) — só para o dono ver o
+   * próprio. Passa por `get_own_profile()` (RPC `security definer`)
+   * porque a coluna `data_nascimento` não tem GRANT de SELECT direto
+   * na tabela para `authenticated`/`anon` — só assim dá pra ler o
+   * próprio valor sem abrir a coluna pra qualquer usuário logado.
+   */
+  async getOwn(): Promise<Profile | null> {
+    const { data, error } = await supabase.rpc("get_own_profile").single<ProfileRow>();
     if (error) {
       if (error.code === "PGRST116") return null;
       throw new Error(error.message);

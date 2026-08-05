@@ -259,10 +259,13 @@ export function EventPostCard({
           <h2 className="font-display font-bold text-[19px] leading-tight tracking-tight text-ink-100 mb-1">
             {event.titulo}
           </h2>
-          <p className="text-xs text-ink-400 mb-3">
+          <p className={`text-xs text-ink-400 ${event.descricao ? "mb-1.5" : "mb-3"}`}>
             {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })} ·{" "}
             {event.local.endereco}
           </p>
+          {event.descricao && (
+            <p className="text-sm text-ink-300 line-clamp-2 mb-3">{event.descricao}</p>
+          )}
         </button>
 
         {/* Ações: curtir, comentar, compartilhar — e Participar, decisivo */}

@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const p = await ProfileRepository.getOwn(userId);
+  const loadProfile = useCallback(async () => {
+    const p = await ProfileRepository.getOwn();
     setProfile(p);
   }, []);
 
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        loadProfile(data.session.user.id).finally(() => setLoading(false));
+        loadProfile().finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(newSession?.user ?? null);
 
       if (newSession?.user) {
-        loadProfile(newSession.user.id);
+        loadProfile();
 
         // Logo após um login OAuth (Google), a sessão traz o token do
         // provedor por uma única vez — é a única chance de capturá-lo
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await loadProfile(user.id);
+    if (user) await loadProfile();
   }, [user, loadProfile]);
 
   return (
