@@ -73,7 +73,28 @@ export interface Profile {
   /** Só vem preenchido de verdade a partir de `getOwn()` (o próprio
    * usuário) — `public_profiles` não expõe esse campo. */
   isAdmin: boolean;
+  /** Pontos de reputação (gamificação): +10 por check-in, -15 por
+   * no-show, -5 por cancelamento, piso em zero. Complementa
+   * `scoreConfiabilidade`/`selo` com um número que sobe e desce de
+   * forma visível a cada compromisso resolvido. */
+  pontosReputacao: number;
   criadoEm: string;
+}
+
+/** Troféu do catálogo — o mesmo pra todo mundo, conquistado ou não. */
+export interface Trophy {
+  id: string;
+  nome: string;
+  descricao: string;
+  emoji: string;
+  criterioTipo: "checkins" | "pontos" | "selo_ouro";
+  criterioValor: number | null;
+  ordem: number;
+}
+
+/** Um troféu já conquistado por um perfil específico. */
+export interface EarnedTrophy extends Trophy {
+  conquistadoEm: string;
 }
 
 export type TipoEvento = "livre" | "pago" | "colaborativo";

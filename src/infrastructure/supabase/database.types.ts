@@ -18,6 +18,15 @@ export type EventStatusRow =
 export type CommitmentStatusRow = "confirmado" | "check-in" | "no-show" | "cancelado";
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
 
+/** Formato retornado por `checkin_event()` (ver migração 0030) — jsonb
+ * com o compromisso atualizado + o que mudou na reputação. */
+export interface CheckinResultRow {
+  commitment: Database["public"]["Tables"]["commitments"]["Row"];
+  pontos_ganhos: number;
+  pontos_totais: number;
+  trofeus_novos: { id: string; nome: string; emoji: string; descricao: string }[];
+}
+
 /** Formato retornado por `admin_get_dashboard_stats()` (ver migração 0028). */
 export interface AdminDashboardStats {
   usuariosTotais: number;
@@ -54,6 +63,7 @@ export interface Database {
           score_confiabilidade: number;
           selo: TrustBadgeRow;
           is_admin: boolean;
+          pontos_reputacao: number;
           criado_em: string;
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
@@ -368,6 +378,24 @@ export interface Database {
           ativo: boolean;
         }>;
       };
+      trophies: {
+        Row: {
+          id: string;
+          nome: string;
+          descricao: string;
+          emoji: string;
+          criterio_tipo: "checkins" | "pontos" | "selo_ouro";
+          criterio_valor: number | null;
+          ordem: number;
+        };
+      };
+      profile_trophies: {
+        Row: {
+          profile_id: string;
+          trophy_id: string;
+          conquistado_em: string;
+        };
+      };
       analytics_events: {
         Row: {
           id: string;
@@ -403,8 +431,12 @@ export interface Database {
         Returns: void;
       };
       checkin_event: {
-        Args: { p_event_id: string; p_lat: number; p_lng: number };
-        Returns: Database["public"]["Tables"]["commitments"]["Row"];
+        Args: { p_event_id: string; p_lat: number | null; p_lng: number | null };
+        Returns: CheckinResultRow;
+      };
+      conclude_past_events: {
+        Args: Record<string, never>;
+        Returns: void;
       };
       redeem_invite: {
         Args: { p_codigo: string };

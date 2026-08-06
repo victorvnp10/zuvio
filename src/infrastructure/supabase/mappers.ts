@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   CollaborativeItem,
   Commitment,
+  EarnedTrophy,
   EventAnnouncement,
   EventPhoto,
   EventProposal,
@@ -14,6 +15,7 @@ import type {
   SharedGroup,
   GroupMember,
   GroupInvite,
+  Trophy,
 } from "../../domain/entities/types";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -31,6 +33,7 @@ type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 type GroupInviteRow = Database["public"]["Tables"]["group_invites"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type TrophyRow = Database["public"]["Tables"]["trophies"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -48,7 +51,23 @@ export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   scoreConfiabilidade: row.score_confiabilidade,
   selo: row.selo,
   isAdmin: "is_admin" in row ? row.is_admin : false,
+  pontosReputacao: row.pontos_reputacao,
   criadoEm: row.criado_em,
+});
+
+export const toTrophy = (row: TrophyRow): Trophy => ({
+  id: row.id,
+  nome: row.nome,
+  descricao: row.descricao,
+  emoji: row.emoji,
+  criterioTipo: row.criterio_tipo,
+  criterioValor: row.criterio_valor,
+  ordem: row.ordem,
+});
+
+export const toEarnedTrophy = (trophyRow: TrophyRow, conquistadoEm: string): EarnedTrophy => ({
+  ...toTrophy(trophyRow),
+  conquistadoEm,
 });
 
 export const toCategory = (row: CategoryRow): Category => ({

@@ -17,8 +17,10 @@ export function useMyEvents() {
         CommitmentsRepository.listMine(user!.id),
       ]);
 
+      // 'no-show' (e 'cancelado') já aparecem no Histórico — aqui é só
+      // o que ainda está em aberto ou já teve check-in de verdade.
       const committedEventIds = myCommitments
-        .filter((c) => c.status !== "cancelado")
+        .filter((c) => c.status === "confirmado" || c.status === "check-in")
         .map((c) => c.eventId)
         .filter((id) => !created.some((e) => e.id === id));
 

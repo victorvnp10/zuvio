@@ -2,6 +2,13 @@ import { supabase } from "../client";
 import { toCommitment } from "../mappers";
 import type { Commitment } from "../../../domain/entities/types";
 
+export interface CheckinResult {
+  commitment: Commitment;
+  pontosGanhos: number;
+  pontosTotais: number;
+  trofeusNovos: { id: string; nome: string; emoji: string; descricao: string }[];
+}
+
 /**
  * Todas as escritas passam pelas funções RPC do banco (ver
  * `supabase/migrations/0001_initial_schema.sql`) — nunca por
@@ -62,14 +69,35 @@ export const CommitmentsRepository = {
     if (error) throw new Error(error.message);
   },
 
-  async checkin(eventId: string, lat: number, lng: number): Promise<Commitment> {
+  /** `lat`/`lng` ficam de fora quando o evento não tem geolocalização
+   * salva — nesse caso o check-in só valida a janela de horário (ver
+   * migração 0030). */
+  async checkin(eventId: string, lat: number | null, lng: number | null): Promise<CheckinResult> {
     const { data, error } = await supabase.rpc("checkin_event", {
       p_event_id: eventId,
       p_lat: lat,
       p_lng: lng,
     });
     if (error) throw new Error(error.message);
-    return toCommitment(data);
+    return {
+      commitment: toCommitment(data.commitment),
+      pontosGanhos: data.pontos_ganhos,
+      pontosTotais: data.pontos_totais,
+      trofeusNovos: data.trofeus_novos ?? [],
+    };
+  },
+
+  /** Compromissos já resolvidos (check-in, no-show ou cancelado) —
+   * histórico de comparecimento, mais recente primeiro. */
+  async listMineResolved(userId: string): Promise<Commitment[]> {
+    const { data, error } = await supabase
+      .from("commitments")
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", ["check-in", "no-show", "cancelado"])
+      .order("confirmado_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toCommitment);
   },
 
   /** Autoconfirmação (evento tipo "pago") de que a pessoa já usou o link de pagamento. */

@@ -59,6 +59,16 @@ export const distanceInMeters = (a: GeoPoint, b: GeoPoint): number => {
   return EARTH_RADIUS_METERS * c;
 };
 
+/** Extraída de `evaluateCheckinEligibility` para reuso no check-in de
+ * eventos sem geolocalização salva (onde só a janela de horário se
+ * aplica — não há como validar raio sem coordenadas do local). */
+export const isWithinCheckinWindow = (eventDateTimeISO: string, nowISO: string): boolean => {
+  const eventTime = new Date(eventDateTimeISO).getTime();
+  const now = new Date(nowISO).getTime();
+  const minutesDiff = (now - eventTime) / (1000 * 60);
+  return minutesDiff >= -CHECKIN_WINDOW_MINUTES_BEFORE && minutesDiff <= CHECKIN_WINDOW_MINUTES_AFTER;
+};
+
 export interface CheckinEligibility {
   isWithinRadius: boolean;
   isWithinTimeWindow: boolean;
@@ -79,12 +89,7 @@ export const evaluateCheckinEligibility = ({
 }): CheckinEligibility => {
   const distanceMeters = distanceInMeters(userLocation, eventLocation);
   const isWithinRadius = distanceMeters <= CHECKIN_RADIUS_METERS;
-
-  const eventTime = new Date(eventDateTimeISO).getTime();
-  const now = new Date(nowISO).getTime();
-  const minutesDiff = (now - eventTime) / (1000 * 60);
-  const isWithinTimeWindow =
-    minutesDiff >= -CHECKIN_WINDOW_MINUTES_BEFORE && minutesDiff <= CHECKIN_WINDOW_MINUTES_AFTER;
+  const isWithinTimeWindow = isWithinCheckinWindow(eventDateTimeISO, nowISO);
 
   return {
     isWithinRadius,

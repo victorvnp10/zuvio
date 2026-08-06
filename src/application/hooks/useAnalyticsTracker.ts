@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AnalyticsRepository } from "../../infrastructure/supabase/repositories/AnalyticsRepository";
+import { EventsRepository } from "../../infrastructure/supabase/repositories/EventsRepository";
 
 const SESSION_KEY = "zuvio_analytics_session_id";
 const SESSION_STARTED_KEY = "zuvio_analytics_session_started";
@@ -38,6 +39,15 @@ export function useAnalyticsTracker() {
     if (!user || sessionStorage.getItem(SESSION_STARTED_KEY) === sessionId) return;
     sessionStorage.setItem(SESSION_STARTED_KEY, sessionId);
     AnalyticsRepository.track(user.id, sessionId, "session_start");
+
+    // Varredura best-effort de eventos vencidos (marca 'concluido' e
+    // vira 'no-show' quem confirmou e nunca fez check-in) — não há
+    // pg_cron configurado, então isso roda "de carona" uma vez por
+    // sessão de qualquer usuário logado. Idempotente e barato o
+    // suficiente pra não precisar de agendamento de verdade.
+    EventsRepository.concludePastEvents().catch((err) => {
+      console.warn("[analytics] falha ao concluir eventos vencidos:", err);
+    });
   }, [user, sessionId]);
 
   useEffect(() => {

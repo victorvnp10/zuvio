@@ -7,12 +7,55 @@ import { Pencil, XCircle, Trash2 } from "lucide-react";
 import { AppShell } from "../layout/AppShell";
 import { useMyEvents } from "../../application/hooks/useMyEvents";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
+import { useHistory, type HistoryEntry } from "../../application/hooks/useHistory";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import { QuorumBar } from "../components/QuorumMeter";
 import { categoryGradientStyle } from "../components/CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import type { EventProposal } from "../../domain/entities/types";
+
+/** Espelha os pontos de `recompute_reliability` (migração 0030) — só
+ * pra rotular a linha do histórico; o total oficial vive em
+ * `profile.pontosReputacao`, calculado no banco. */
+const STATUS_DISPLAY: Record<string, { label: string; pontos: number; className: string }> = {
+  "check-in": { label: "Compareceu", pontos: 10, className: "text-quorum-500" },
+  "no-show": { label: "Não compareceu", pontos: -15, className: "text-red-400" },
+  cancelado: { label: "Cancelado", pontos: -5, className: "text-ink-400" },
+};
+
+function HistoryRow({ entry, onOpen }: { entry: HistoryEntry; onOpen: () => void }) {
+  const { data: categories } = useCategories();
+  const categoria = findCategory(categories, entry.event.categoria);
+  const display = STATUS_DISPLAY[entry.commitment.status] ?? { label: entry.commitment.status, pontos: 0, className: "text-ink-400" };
+
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full flex items-center gap-3 bg-ink-800/40 border border-ink-700 rounded-xl p-3 text-left"
+    >
+      <span
+        className="w-9 h-9 rounded-full flex items-center justify-center text-sm shrink-0"
+        style={{ backgroundColor: categoria.cor }}
+      >
+        {categoria.emoji}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-ink-100 truncate">{entry.event.titulo}</p>
+        <p className="text-[11px] text-ink-500">
+          {format(new Date(entry.event.dataHora), "dd/MM/yyyy", { locale: ptBR })}
+        </p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className={`text-xs font-semibold ${display.className}`}>{display.label}</p>
+        <p className={`text-[11px] ${display.className}`}>
+          {display.pontos >= 0 ? "+" : ""}
+          {display.pontos} pontos
+        </p>
+      </div>
+    </button>
+  );
+}
 
 function EventCard({
   event,
@@ -126,6 +169,7 @@ export function MyEventsScreen() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useMyEvents();
+  const { data: history } = useHistory();
   const { cancelEvent, deleteEvent, isSubmitting } = useManageMyEvent();
   const [pendingAction, setPendingAction] = useState<{ id: string; type: "cancel" | "delete" } | null>(
     null
@@ -184,6 +228,23 @@ export function MyEventsScreen() {
               ))}
             </div>
           </section>
+
+          {history && history.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold text-ink-400 mb-2 uppercase tracking-wide">
+                Histórico
+              </h2>
+              <div className="space-y-2">
+                {history.map((entry) => (
+                  <HistoryRow
+                    key={entry.commitment.id}
+                    entry={entry}
+                    onOpen={() => navigate(`/eventos/${entry.event.id}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
 

@@ -27,6 +27,7 @@ import { useCategories, findCategory } from "../../application/hooks/useCategori
 import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
 import { PresenceCelebration } from "../components/PresenceCelebration";
+import { CheckinReward } from "../components/CheckinReward";
 import { MapLinksRow } from "../components/MapLinksRow";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { ChatPanel } from "../components/ChatPanel";
@@ -59,6 +60,8 @@ export function EventDetailScreen() {
     handleCommit,
     handleCancel,
     handleCheckin,
+    checkinResult,
+    clearCheckinResult,
     refetch,
   } = useEventDetail(eventId);
 
@@ -423,6 +426,8 @@ export function EventDetailScreen() {
           onClose={() => setShowParticipants(false)}
         />
       )}
+
+      {checkinResult && <CheckinReward result={checkinResult} onDismiss={clearCheckinResult} />}
 
       <BottomNav />
     </div>

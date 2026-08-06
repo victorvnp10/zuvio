@@ -203,4 +203,12 @@ export const EventsRepository = {
       supabase.removeChannel(channel);
     };
   },
+
+  /** Varredura best-effort de eventos vencidos (marca 'concluido' e
+   * vira 'no-show' quem confirmou e nunca fez check-in) — chamada uma
+   * vez por sessão pelo `AnalyticsTracker`, sem bloquear nada se falhar. */
+  async concludePastEvents(): Promise<void> {
+    const { error } = await supabase.rpc("conclude_past_events");
+    if (error) throw new Error(error.message);
+  },
 };

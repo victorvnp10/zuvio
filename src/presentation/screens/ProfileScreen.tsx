@@ -2,12 +2,15 @@ import { Camera, LogOut } from "lucide-react";
 import { AppShell } from "../layout/AppShell";
 import { useAuth } from "../../application/context/AuthContext";
 import { useProfilePhoto } from "../../application/hooks/useProfilePhoto";
+import { useTrophies } from "../../application/hooks/useTrophies";
 import { TrustBadgePill } from "../components/TrustBadge";
+import { TrophyGrid } from "../components/TrophyGrid";
 import { Avatar } from "../components/Avatar";
 
 export function ProfileScreen() {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { uploadPhoto, isUploading, error } = useProfilePhoto(user?.id ?? "", refreshProfile);
+  const { progress: trophyProgress } = useTrophies();
 
   if (!profile) {
     return (
@@ -42,7 +45,11 @@ export function ProfileScreen() {
         <h2 className="font-display text-xl font-semibold mt-3">{profile.nome}</h2>
         <p className="text-sm text-ink-400">{profile.localizacaoBase}</p>
         <div className="mt-3">
-          <TrustBadgePill selo={profile.selo} scoreConfiabilidade={profile.scoreConfiabilidade} />
+          <TrustBadgePill
+            selo={profile.selo}
+            scoreConfiabilidade={profile.scoreConfiabilidade}
+            pontosReputacao={profile.pontosReputacao}
+          />
         </div>
       </div>
 
@@ -53,6 +60,13 @@ export function ProfileScreen() {
               {cat}
             </span>
           ))}
+        </div>
+      )}
+
+      {trophyProgress && trophyProgress.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-ink-400 mb-2 uppercase tracking-wide">Troféus</h3>
+          <TrophyGrid progress={trophyProgress} />
         </div>
       )}
 
