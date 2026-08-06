@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CalendarDays, Clock, MapPin, Star } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { QuorumSummary } from "../../domain/services/QuorumService";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
@@ -48,11 +49,24 @@ export function ticketNumberFor(eventId: string): string {
   return String(hash % 100000).padStart(5, "0");
 }
 
-/** Grade de 3 colunas — Data / Hora / Local — no lugar da linha
- * corrida de texto: mais rápida de escanear, e junto com a seção de
- * confirmados forma o "corpo principal" escuro do ingresso, acima da
- * perfuração. */
-export function TicketInfoGrid({
+/** Linha fina com uma estrela no meio — separa o título das
+ * informações do evento, tudo ainda dentro da capa/gradiente. O
+ * ingresso tem uma divisão só (a perfuração antes do canhoto); isto
+ * aqui é decoração, não uma nova seção. */
+export function TicketHeroDivider() {
+  return (
+    <div className="relative z-10 flex items-center gap-2 w-full max-w-[220px]">
+      <div className="h-px flex-1 bg-white/25" />
+      <Star size={9} className="text-white/50 fill-white/50 shrink-0" />
+      <div className="h-px flex-1 bg-white/25" />
+    </div>
+  );
+}
+
+/** Data, hora e local em linha, direto sobre a capa/gradiente — como
+ * no ingresso de referência, esses dados moram dentro da imagem, não
+ * numa faixa escura à parte. */
+export function TicketHeroMeta({
   dataHora,
   endereco,
 }: {
@@ -61,18 +75,24 @@ export function TicketInfoGrid({
 }) {
   const date = new Date(dataHora);
   return (
-    <div className="grid grid-cols-3 border-t border-ink-100/10">
-      <div className="px-2 py-3 text-center">
-        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Data</p>
-        <p className="text-sm font-bold text-ink-100">{format(date, "dd/MM", { locale: ptBR })}</p>
+    <div className="relative z-10 flex items-start justify-center gap-5 text-white">
+      <div className="flex items-center gap-1.5">
+        <CalendarDays size={14} className="text-white/70 shrink-0" />
+        <div className="text-left leading-tight">
+          <p className="text-xs font-bold">{format(date, "dd/MM/yyyy")}</p>
+          <p className="text-[10px] text-white/60 capitalize">{format(date, "EEEE", { locale: ptBR })}</p>
+        </div>
       </div>
-      <div className="px-2 py-3 text-center border-l border-ink-100/10">
-        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Hora</p>
-        <p className="text-sm font-bold text-ink-100">{format(date, "HH:mm")}</p>
+      <div className="flex items-center gap-1.5">
+        <Clock size={14} className="text-white/70 shrink-0" />
+        <div className="text-left leading-tight">
+          <p className="text-xs font-bold">{format(date, "HH:mm")}</p>
+          <p className="text-[10px] text-white/60">horário</p>
+        </div>
       </div>
-      <div className="px-2 py-3 text-center border-l border-ink-100/10 min-w-0">
-        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Local</p>
-        <p className="text-sm font-bold text-ink-100 truncate" title={endereco}>
+      <div className="flex items-center gap-1.5 min-w-0 max-w-[110px]">
+        <MapPin size={14} className="text-white/70 shrink-0" />
+        <p className="text-xs font-bold text-left leading-tight line-clamp-2" title={endereco}>
           {endereco}
         </p>
       </div>
@@ -80,27 +100,25 @@ export function TicketInfoGrid({
   );
 }
 
-/** Confirmados como componente próprio: o anel de quórum (a
- * assinatura do Zuvio) ao lado de quem já confirmou — não mais
- * flutuando sobre a capa, mas como uma seção clara do "corpo
- * principal" do ingresso, logo antes da perfuração. */
-export function TicketAttendance({
+/** Confirmados, ainda dentro da capa: o anel de quórum (a assinatura
+ * do Zuvio) ao lado de quem já confirmou. */
+export function TicketHeroAttendance({
   quorum,
+  confirmedLabel,
   rightSlot,
 }: {
   quorum: QuorumSummary;
+  /** "você confirmou" quando o próprio usuário é participante/dono do
+   * evento; senão, cai para uma contagem genérica. */
+  confirmedLabel: string;
   rightSlot?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-ink-100/10">
-      <div className="flex items-center gap-3 min-w-0">
-        <QuorumMeter quorum={quorum} size={44} />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-ink-100">
-            {quorum.vagasConfirmadas} confirmado{quorum.vagasConfirmadas === 1 ? "" : "s"}
-          </p>
-          <p className="text-xs text-ink-400">de {quorum.vagasTotal} pessoas</p>
-        </div>
+    <div className="relative z-10 flex items-center gap-2.5">
+      <QuorumMeter quorum={quorum} size={44} />
+      <div className="text-left leading-tight">
+        <p className="text-xs font-bold text-white">{confirmedLabel}</p>
+        <p className="text-[11px] text-white/60">de {quorum.vagasTotal} confirmados</p>
       </div>
       {rightSlot}
     </div>

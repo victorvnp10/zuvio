@@ -32,9 +32,10 @@ import { AnnouncementsSection } from "../components/AnnouncementsSection";
 import { ParticipantsModal } from "../components/ParticipantsModal";
 import {
   ConfirmedStack,
-  TicketAttendance,
   TicketCodeRow,
-  TicketInfoGrid,
+  TicketHeroAttendance,
+  TicketHeroDivider,
+  TicketHeroMeta,
   TicketPaperFrame,
   TicketPerforation,
   TicketStamp,
@@ -100,6 +101,10 @@ export function EventDetailScreen() {
   const participantIds = commitments
     .filter((c) => c.status !== "cancelado")
     .map((c) => c.userId);
+  const confirmedLabel =
+    isCommitted || isCreator
+      ? "você confirmou"
+      : `${quorum.vagasConfirmadas} confirmado${quorum.vagasConfirmadas === 1 ? "" : "s"}`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -161,14 +166,14 @@ export function EventDetailScreen() {
             {celebrating && <Confetti />}
             {presenceCelebrating && <PresenceCelebration />}
             <div
-              className="relative w-full min-h-[260px] flex flex-col items-center justify-center gap-4 px-8 py-10 text-center"
+              className="relative w-full flex flex-col items-center gap-3.5 px-8 pt-16 pb-5 text-center"
               style={
                 event.capaUrl
                   ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
                   : categoryGradientStyle(categoria.cor)
               }
             >
-              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0.15) 0%, rgba(11,14,26,0.55) 100%)" }} />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0.1) 0%, rgba(11,14,26,0.6) 100%)" }} />
               {/* Brilho sutil sobre a capa/gradiente — impressão premium. */}
               <div className="ticket-sheen absolute inset-0 pointer-events-none" />
               {!event.capaUrl && (
@@ -179,6 +184,22 @@ export function EventDetailScreen() {
               <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm">
                 {event.titulo}
               </h2>
+
+              {!isCancelled && (
+                <>
+                  <TicketHeroDivider />
+                  <TicketHeroMeta dataHora={event.dataHora} endereco={event.local.endereco} />
+                  <TicketHeroAttendance
+                    quorum={quorum}
+                    confirmedLabel={confirmedLabel}
+                    rightSlot={
+                      <button onClick={() => setShowParticipants(true)} aria-label="Ver participantes">
+                        {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
+                      </button>
+                    }
+                  />
+                </>
+              )}
             </div>
 
             {!isCancelled && (
@@ -206,21 +227,6 @@ export function EventDetailScreen() {
 
           {!isCancelled && (
             <>
-              {/* Corpo principal, em três colunas — mais rápido de ler
-                  que texto corrido. */}
-              <TicketInfoGrid dataHora={event.dataHora} endereco={event.local.endereco} />
-
-              {/* Confirmados: o anel de quórum (assinatura do Zuvio) +
-                  quem já confirmou. */}
-              <TicketAttendance
-                quorum={quorum}
-                rightSlot={
-                  <button onClick={() => setShowParticipants(true)} aria-label="Ver participantes">
-                    {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
-                  </button>
-                }
-              />
-
               <TicketPerforation />
 
               {/* O canhoto de papel — código, anfitrião e QR; é só essa

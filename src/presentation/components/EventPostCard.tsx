@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Users } from "lucide-react";
 import { summarizeQuorum } from "../../domain/services/QuorumService";
 import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTiming";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
@@ -12,9 +12,10 @@ import { PresenceCelebration } from "./PresenceCelebration";
 import { ParticipantsModal } from "./ParticipantsModal";
 import {
   ConfirmedStack,
-  TicketAttendance,
   TicketCodeRow,
-  TicketInfoGrid,
+  TicketHeroAttendance,
+  TicketHeroDivider,
+  TicketHeroMeta,
   TicketPaperFrame,
   TicketPerforation,
   TicketStamp,
@@ -118,6 +119,10 @@ export function EventPostCard({
 
   const shareUrl = `${window.location.origin}/eventos/${event.id}`;
   const stamp = ticketStampFor(quorum);
+  const confirmedLabel =
+    isCommitted || isOwnEvent
+      ? "você confirmou"
+      : `${quorum.vagasConfirmadas} confirmado${quorum.vagasConfirmadas === 1 ? "" : "s"}`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -133,10 +138,10 @@ export function EventPostCard({
           overflow hidden — é o que faz o card parecer uma ficha de
           ingresso flutuante, não um post de feed contínuo. */}
       <article className="group rounded-[20px] bg-ink-900 border border-ink-800 overflow-hidden">
-        {/* Hero minimalista: só ícone/capa + nome do evento — quanto
-            menos informação aqui, maior a sensação premium (data,
-            hora, local e confirmados ganham suas próprias seções
-            logo abaixo). */}
+        {/* Hero: tudo que identifica o evento — ícone/capa, nome,
+            data/hora/local e confirmados — mora dentro da imagem. O
+            ingresso tem uma única divisão: a perfuração antes do
+            canhoto de papel, lá embaixo. */}
         <div className="relative">
           {celebrating && <Confetti />}
           {presenceCelebrating && <PresenceCelebration />}
@@ -145,7 +150,7 @@ export function EventPostCard({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="relative w-full min-h-[260px] flex flex-col items-center justify-center gap-4 px-8 py-10 text-center"
+            className="relative w-full flex flex-col items-center gap-3.5 px-6 pt-16 pb-5 text-center"
             style={
               currentPhoto
                 ? { backgroundImage: `url(${currentPhoto.fotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -154,7 +159,7 @@ export function EventPostCard({
                 : categoryGradientStyle(categoria.cor)
             }
           >
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0.15) 0%, rgba(11,14,26,0.55) 100%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0.1) 0%, rgba(11,14,26,0.6) 100%)" }} />
             {/* Brilho sutil sobre a capa/gradiente — impressão premium, não papel fosco. */}
             <div className="ticket-sheen absolute inset-0 pointer-events-none" />
             {!hasCover && (
@@ -165,6 +170,14 @@ export function EventPostCard({
             <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm">
               {event.titulo}
             </h2>
+
+            <TicketHeroDivider />
+            <TicketHeroMeta dataHora={event.dataHora} endereco={event.local.endereco} />
+            <TicketHeroAttendance
+              quorum={quorum}
+              confirmedLabel={confirmedLabel}
+              rightSlot={participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
+            />
           </button>
 
           {/* Barra segmentada estilo stories/reels — só aparece quando o
@@ -234,27 +247,6 @@ export function EventPostCard({
           <p className="text-sm text-ink-300 line-clamp-2 px-4 pt-3">{event.descricao}</p>
         )}
 
-        {/* Corpo principal, em três colunas — mais rápido de ler que
-            texto corrido. */}
-        <TicketInfoGrid dataHora={event.dataHora} endereco={event.local.endereco} />
-
-        {/* Confirmados: o anel de quórum (assinatura do Zuvio) + quem
-            já confirmou. */}
-        <TicketAttendance
-          quorum={quorum}
-          rightSlot={
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowParticipants(true);
-              }}
-              aria-label="Ver participantes"
-            >
-              {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
-            </button>
-          }
-        />
-
         <TicketPerforation />
 
         {/* O canhoto de papel — código, anfitrião e QR; é só essa
@@ -281,6 +273,11 @@ export function EventPostCard({
         <button onClick={handleShare} aria-label="Compartilhar">
           <Share2 size={19} strokeWidth={1.8} className="text-ink-200" />
         </button>
+        {participantIds.length > 0 && (
+          <button onClick={() => setShowParticipants(true)} aria-label="Ver participantes">
+            <Users size={19} strokeWidth={1.8} className="text-ink-200" />
+          </button>
+        )}
 
         <button
           onClick={async () => {
