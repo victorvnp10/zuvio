@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -182,33 +182,80 @@ function ActivityCoverUpload({ activity, onUploaded }: { activity: ConferenceAct
   );
 }
 
-/** Estrelas clicáveis (própria nota) + média pública ao lado — só
- * aparece pra quem já fez check-in (mesma regra da RLS de insert). */
+/** Estrelas (própria nota) + opinião em texto opcional + média pública
+ * ao lado — só aparece pra quem já fez check-in (mesma regra da RLS de
+ * insert). Estrela sozinha não envia mais na hora: só marca a nota
+ * pendente, pra dar tempo de escrever a opinião antes de confirmar
+ * (senão clicar de novo pra corrigir a nota apagaria um comentário já
+ * salvo). */
 function ActivityRatingWidget({ activityId }: { activityId: string }) {
   const { myRating, summary, rate, isSubmitting } = useActivityRating(activityId);
   const [hoverStar, setHoverStar] = useState(0);
-  const activeStar = hoverStar || myRating?.nota || 0;
+  const [pendingStar, setPendingStar] = useState<number | null>(null);
+  const [comentario, setComentario] = useState("");
+  const syncedRef = useRef(false);
+
+  useEffect(() => {
+    if (!syncedRef.current && myRating !== undefined) {
+      setPendingStar(myRating?.nota ?? null);
+      setComentario(myRating?.comentario ?? "");
+      syncedRef.current = true;
+    }
+  }, [myRating]);
+
+  const activeStar = hoverStar || pendingStar || 0;
+  const isDirty =
+    pendingStar !== null &&
+    (pendingStar !== (myRating?.nota ?? null) || comentario.trim() !== (myRating?.comentario ?? ""));
+
+  const handleSubmit = async () => {
+    if (!pendingStar) return;
+    await rate(pendingStar, comentario.trim() || undefined);
+  };
 
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <div className="flex gap-0.5" onMouseLeave={() => setHoverStar(0)}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => rate(star)}
-            onMouseEnter={() => setHoverStar(star)}
-            disabled={isSubmitting}
-            aria-label={`${star} estrelas`}
-          >
-            <Star size={14} className={star <= activeStar ? "fill-amber-500 text-amber-500" : "text-ink-600"} />
-          </button>
-        ))}
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center gap-2">
+        <div className="flex gap-0.5" onMouseLeave={() => setHoverStar(0)}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setPendingStar(star)}
+              onMouseEnter={() => setHoverStar(star)}
+              disabled={isSubmitting}
+              aria-label={`${star} estrelas`}
+            >
+              <Star size={14} className={star <= activeStar ? "fill-amber-500 text-amber-500" : "text-ink-600"} />
+            </button>
+          ))}
+        </div>
+        {summary && summary.total > 0 && (
+          <span className="text-[10px] text-ink-500">
+            {summary.media?.toFixed(1)} ({summary.total})
+          </span>
+        )}
       </div>
-      {summary && summary.total > 0 && (
-        <span className="text-[10px] text-ink-500">
-          {summary.media?.toFixed(1)} ({summary.total})
-        </span>
+      {pendingStar !== null && (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            placeholder="Escreva uma opinião (opcional)"
+            maxLength={500}
+            disabled={isSubmitting}
+            className="flex-1 min-w-0 bg-ink-900/60 border border-ink-700 rounded-lg px-2 py-1 text-xs text-ink-100 placeholder:text-ink-600"
+          />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isDirty}
+            className="text-[11px] font-semibold text-coral-500 shrink-0 disabled:opacity-40"
+          >
+            {myRating ? "Atualizar" : "Enviar"}
+          </button>
+        </div>
       )}
     </div>
   );
