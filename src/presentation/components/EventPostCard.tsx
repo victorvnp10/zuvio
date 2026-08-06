@@ -14,6 +14,7 @@ import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
 import { PresenceCelebration } from "./PresenceCelebration";
 import { ParticipantsModal } from "./ParticipantsModal";
+import { TicketStamp, TicketStub, ticketStampFor } from "./TicketStub";
 import { categoryGradientStyle } from "./CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import type { EventProposal, EventPhoto } from "../../domain/entities/types";
@@ -135,13 +136,15 @@ export function EventPostCard({
     });
   };
 
+  const shareUrl = `${window.location.origin}/eventos/${event.id}`;
+  const stamp = ticketStampFor(quorum);
+
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}/eventos/${event.id}`;
     if (navigator.share) {
-      await navigator.share({ title: event.titulo, url }).catch(() => {});
+      await navigator.share({ title: event.titulo, url: shareUrl }).catch(() => {});
     } else {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
     }
   };
 
@@ -149,7 +152,7 @@ export function EventPostCard({
     // A caixa "ticket": cantos arredondados + borda nos 4 lados +
     // overflow hidden — é o que faz o card parecer uma ficha de
     // ingresso flutuante, não um post de feed contínuo.
-    <article className="rounded-[20px] bg-ink-900 border border-ink-800 overflow-hidden">
+    <article className="group rounded-[20px] bg-ink-900 border border-ink-800 overflow-hidden">
       {/* Imagem, com selos flutuando direto nela e o anel de quórum
           sempre no mesmo canto — a assinatura visual do Zuvio. */}
       <div className="relative">
@@ -170,6 +173,8 @@ export function EventPostCard({
           }
         >
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0) 40%, rgba(11,14,26,0.55) 100%)" }} />
+          {/* Brilho sutil sobre a capa/gradiente — impressão premium, não papel fosco. */}
+          <div className="ticket-sheen absolute inset-0 pointer-events-none" />
           {!currentPhoto && !event.capaUrl && (
             <span className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
               <span className="category-icon-float">{categoria.emoji}</span>
@@ -225,17 +230,17 @@ export function EventPostCard({
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
             {categoria.nome}
           </span>
-          <span
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
-              quorum.quorumAtingido
-                ? "bg-quorum-500 text-ink-950"
-                : urgent
-                ? "bg-coral-500 text-ink-950"
-                : "bg-ink-950/55 backdrop-blur-sm text-ink-100"
-            }`}
-          >
-            {quorum.quorumAtingido ? "CONFIRMADO 🔓" : countdown}
-          </span>
+          {stamp ? (
+            <TicketStamp label={stamp.label} tone={stamp.tone} />
+          ) : (
+            <span
+              className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+                urgent ? "bg-coral-500 text-ink-950" : "bg-ink-950/55 backdrop-blur-sm text-ink-100"
+              }`}
+            >
+              {countdown}
+            </span>
+          )}
         </div>
 
         <div className="absolute bottom-3 left-3 flex items-center gap-2 z-20">
@@ -253,18 +258,11 @@ export function EventPostCard({
         </div>
       </div>
 
-      {/* Divisória de canhoto de ingresso — sem margem lateral, os
-          recortes cortam nas bordas do card (overflow hidden acima).
-          O código impresso sobre a perfuração reforça que isto é um
-          ticket de verdade, não só um post de feed. */}
-      <div className="relative">
-        <div className="ticket-stub-divider" />
-        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="bg-ink-900 px-2 text-[9px] font-mono tracking-[0.2em] text-ink-600">
-            ZUV·{event.id.slice(0, 6).toUpperCase()}
-          </span>
-        </span>
-      </div>
+      {/* Canhoto de ingresso — sem margem lateral, os picotes cortam
+          nas bordas do card (overflow hidden acima). Papel, QR e
+          código reforçam que isto é um ticket de verdade, não só um
+          post de feed; cai 2-3px quando o mouse passa no card. */}
+      <TicketStub eventId={event.id} shareUrl={shareUrl} />
 
       <div className="pt-3.5 px-4 pb-4">
         {/* Título em destaque, logo abaixo da imagem */}

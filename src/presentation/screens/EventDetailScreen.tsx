@@ -33,6 +33,7 @@ import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTimi
 import { ChatPanel } from "../components/ChatPanel";
 import { AnnouncementsSection } from "../components/AnnouncementsSection";
 import { ParticipantsModal } from "../components/ParticipantsModal";
+import { TicketStamp, TicketStub, ticketStampFor } from "../components/TicketStub";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
@@ -88,13 +89,14 @@ export function EventDetailScreen() {
   const canCheckin = myCommitment?.status === "confirmado";
   const alreadyCheckedIn = myCommitment?.status === "check-in";
   const categoria = findCategory(categories, event.categoria);
+  const shareUrl = window.location.href;
+  const stamp = ticketStampFor(quorum);
 
   const handleShare = async () => {
-    const url = window.location.href;
     if (navigator.share) {
-      await navigator.share({ title: event.titulo, url }).catch(() => {});
+      await navigator.share({ title: event.titulo, url: shareUrl }).catch(() => {});
     } else {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
     }
   };
 
@@ -140,70 +142,68 @@ export function EventDetailScreen() {
           </div>
         )}
 
-        {/* Mesmo conceito do feed: imagem com selos flutuando e o anel
-            de quórum sempre no mesmo canto — a assinatura do Zuvio. */}
-        <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden">
-          {celebrating && <Confetti />}
-          {presenceCelebrating && <PresenceCelebration />}
-          <div
-            className="w-full aspect-square flex items-center justify-center"
-            style={
-              event.capaUrl
-                ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-                : categoryGradientStyle(categoria.cor)
-            }
-          >
-            {!event.capaUrl && (
-              <span className="category-icon-float text-7xl opacity-90">{categoria.emoji}</span>
+        {/* Mesmo conceito do feed: imagem com selos flutuando, o anel
+            de quórum sempre no mesmo canto, e o canhoto de ingresso
+            logo abaixo — tudo dentro de um único `group`, pra cair
+            2-3px junto quando o mouse passa. */}
+        <div className="group relative mx-4 mt-4 rounded-2xl overflow-hidden">
+          <div className="relative">
+            {celebrating && <Confetti />}
+            {presenceCelebrating && <PresenceCelebration />}
+            <div
+              className="w-full aspect-square flex items-center justify-center"
+              style={
+                event.capaUrl
+                  ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                  : categoryGradientStyle(categoria.cor)
+              }
+            >
+              {!event.capaUrl && (
+                <span className="category-icon-float text-7xl opacity-90">{categoria.emoji}</span>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
+              {/* Brilho sutil sobre a capa/gradiente — impressão premium. */}
+              <div className="ticket-sheen absolute inset-0 pointer-events-none" />
+            </div>
+
+            {!isCancelled && (
+              <>
+                <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                  <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
+                    {categoria.nome}
+                  </span>
+                  {stamp ? (
+                    <TicketStamp label={stamp.label} tone={stamp.tone} />
+                  ) : (
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+                        isUrgent(event.dataHora, new Date().toISOString())
+                          ? "bg-coral-500 text-ink-950"
+                          : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
+                      }`}
+                    >
+                      {getCountdownLabel(event.dataHora, new Date().toISOString())}
+                    </span>
+                  )}
+                </div>
+                <div className="absolute bottom-3 left-3">
+                  <button
+                    onClick={() => setShowParticipants(true)}
+                    className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5"
+                    aria-label="Ver participantes"
+                  >
+                    <QuorumMeter quorum={quorum} size={52} />
+                  </button>
+                </div>
+              </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
           </div>
 
-          {!isCancelled && (
-            <>
-              <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
-                  {categoria.nome}
-                </span>
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
-                    quorum.quorumAtingido
-                      ? "bg-quorum-500 text-ink-950"
-                      : isUrgent(event.dataHora, new Date().toISOString())
-                      ? "bg-coral-500 text-ink-950"
-                      : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
-                  }`}
-                >
-                  {quorum.quorumAtingido ? "CONFIRMADO 🔓" : getCountdownLabel(event.dataHora, new Date().toISOString())}
-                </span>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <button
-                  onClick={() => setShowParticipants(true)}
-                  className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5"
-                  aria-label="Ver participantes"
-                >
-                  <QuorumMeter quorum={quorum} size={52} />
-                </button>
-              </div>
-            </>
-          )}
+          {/* Canhoto de ingresso — papel, QR e código reforçam que o
+              card é um ticket de verdade, não só um post de feed. */}
+          {!isCancelled && <TicketStub eventId={event.id} shareUrl={shareUrl} />}
         </div>
-
-        {/* Divisória de canhoto de ingresso, com o "código do bilhete"
-            impresso sobre a perfuração — reforça que o card é um
-            ticket de verdade, não só um post de feed. */}
-        {!isCancelled && (
-          <div className="relative mx-4 my-3">
-            <div className="ticket-stub-divider" />
-            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="bg-ink-900 px-2 text-[9px] font-mono tracking-[0.2em] text-ink-600">
-                ZUV·{event.id.slice(0, 6).toUpperCase()}
-              </span>
-            </span>
-          </div>
-        )}
 
         {/* Título em destaque, logo abaixo da imagem */}
         <div className="px-4">
