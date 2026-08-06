@@ -1,6 +1,10 @@
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { QRCodeSVG } from "qrcode.react";
 import type { QuorumSummary } from "../../domain/services/QuorumService";
+import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { Avatar } from "./Avatar";
+import { QuorumMeter } from "./QuorumMeter";
 
 type StampTone = "confirmed" | "urgent" | "sold-out";
 
@@ -44,16 +48,107 @@ export function ticketNumberFor(eventId: string): string {
   return String(hash % 100000).padStart(5, "0");
 }
 
-/** A folha de papel inteira do bilhete: código + anfitrião + TUDO que
- * vem depois (título, ações, confirmados) moram juntos aqui — não só
- * uma tarja fina. É essa folha inteira que "cai" 3px no hover, como
- * se fosse a parte destacável do ingresso. `children` é o conteúdo
- * de cada tela (varia entre feed e detalhe), sempre em tom de papel. */
+/** Grade de 3 colunas — Data / Hora / Local — no lugar da linha
+ * corrida de texto: mais rápida de escanear, e junto com a seção de
+ * confirmados forma o "corpo principal" escuro do ingresso, acima da
+ * perfuração. */
+export function TicketInfoGrid({
+  dataHora,
+  endereco,
+}: {
+  dataHora: string;
+  endereco: string;
+}) {
+  const date = new Date(dataHora);
+  return (
+    <div className="grid grid-cols-3 border-t border-ink-100/10">
+      <div className="px-2 py-3 text-center">
+        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Data</p>
+        <p className="text-sm font-bold text-ink-100">{format(date, "dd/MM", { locale: ptBR })}</p>
+      </div>
+      <div className="px-2 py-3 text-center border-l border-ink-100/10">
+        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Hora</p>
+        <p className="text-sm font-bold text-ink-100">{format(date, "HH:mm")}</p>
+      </div>
+      <div className="px-2 py-3 text-center border-l border-ink-100/10 min-w-0">
+        <p className="text-[9px] uppercase tracking-wide text-ink-400 mb-0.5">Local</p>
+        <p className="text-sm font-bold text-ink-100 truncate" title={endereco}>
+          {endereco}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Confirmados como componente próprio: o anel de quórum (a
+ * assinatura do Zuvio) ao lado de quem já confirmou — não mais
+ * flutuando sobre a capa, mas como uma seção clara do "corpo
+ * principal" do ingresso, logo antes da perfuração. */
+export function TicketAttendance({
+  quorum,
+  rightSlot,
+}: {
+  quorum: QuorumSummary;
+  rightSlot?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-ink-100/10">
+      <div className="flex items-center gap-3 min-w-0">
+        <QuorumMeter quorum={quorum} size={44} />
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-ink-100">
+            {quorum.vagasConfirmadas} confirmado{quorum.vagasConfirmadas === 1 ? "" : "s"}
+          </p>
+          <p className="text-xs text-ink-400">de {quorum.vagasTotal} pessoas</p>
+        </div>
+      </div>
+      {rightSlot}
+    </div>
+  );
+}
+
+function ParticipantDot({ userId }: { userId: string }) {
+  const { data: profile } = usePublicProfile(userId);
+  return (
+    <div className="ring-2 ring-ink-950 rounded-full">
+      <Avatar fotoUrl={profile?.fotoUrl} nome={profile?.nome} size={22} />
+    </div>
+  );
+}
+
+/** Pilha de avatares de quem confirmou — o "Avatar ao lado" da seção
+ * de confirmados. */
+export function ConfirmedStack({ participantIds }: { participantIds: string[] }) {
+  const shown = participantIds.slice(0, 3);
+  const extra = participantIds.length - shown.length;
+  return (
+    <div className="flex -space-x-2 shrink-0">
+      {shown.map((id) => (
+        <ParticipantDot key={id} userId={id} />
+      ))}
+      {extra > 0 && (
+        <div className="ring-2 ring-ink-950 rounded-full w-[22px] h-[22px] flex items-center justify-center bg-ink-500 text-[9px] font-bold text-ink-950">
+          +{extra}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A perfuração entre o corpo escuro e o canhoto de papel: uma fileira
+ * de furos redondos (não uma tarja mordida) — o motivo mais
+ * reconhecível de "isto é um ingresso de verdade". */
+export function TicketPerforation() {
+  return <div className="ticket-perf-band" />;
+}
+
+/** O canhoto de papel — só código, anfitrião e QR moram aqui; é essa
+ * folha, pequena, que "cai" 2-3px no hover, como se fosse a parte
+ * destacável do ingresso (o resto do card não se move). */
 export function TicketPaperFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="ticket-canhoto">
       <div className="ticket-paper">{children}</div>
-      <div className="ticket-stub-perf" />
     </div>
   );
 }
@@ -72,8 +167,8 @@ export function TicketCodeRow({
   const code = `ZUV-${eventId.slice(0, 6).toUpperCase()}`;
 
   return (
-    <div className="flex items-stretch gap-3 px-4 pt-4 pb-3">
-      <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+    <div className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
+      <div className="min-w-0 flex flex-col justify-between py-0.5">
         <div>
           <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
             CÓDIGO DO EVENTO
@@ -96,13 +191,17 @@ export function TicketCodeRow({
         </div>
       </div>
 
-      <div className="shrink-0 flex flex-col items-center justify-center gap-1">
-        <div className="bg-white p-1.5 rounded-md">
-          <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
+      {/* Separador tracejado antes do QR — a costura entre o texto do
+          canhoto e o "código de barras", como num ingresso real. */}
+      <div className="flex items-stretch pl-3 border-l-2 border-dashed border-paper-ink/20">
+        <div className="shrink-0 flex flex-col items-center justify-center gap-1">
+          <div className="bg-white p-1.5 rounded-md">
+            <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
+          </div>
+          <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
+            Nº {ticketNumberFor(eventId)}
+          </p>
         </div>
-        <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
-          Nº {ticketNumberFor(eventId)}
-        </p>
       </div>
     </div>
   );

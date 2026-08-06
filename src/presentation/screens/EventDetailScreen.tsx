@@ -12,7 +12,6 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  Users,
 } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useManageMyEvent } from "../../application/hooks/useManageMyEvent";
@@ -21,7 +20,6 @@ import { useQuorumCelebration } from "../../application/hooks/useQuorumCelebrati
 import { usePresenceCelebration } from "../../application/hooks/usePresenceCelebration";
 import { useAuth } from "../../application/context/AuthContext";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
-import { QuorumMeter } from "../components/QuorumMeter";
 import { categoryGradientStyle } from "../components/CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import { Confetti } from "../components/Confetti";
@@ -32,7 +30,16 @@ import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTimi
 import { ChatPanel } from "../components/ChatPanel";
 import { AnnouncementsSection } from "../components/AnnouncementsSection";
 import { ParticipantsModal } from "../components/ParticipantsModal";
-import { TicketCodeRow, TicketPaperFrame, TicketStamp, ticketStampFor } from "../components/TicketStub";
+import {
+  ConfirmedStack,
+  TicketAttendance,
+  TicketCodeRow,
+  TicketInfoGrid,
+  TicketPaperFrame,
+  TicketPerforation,
+  TicketStamp,
+  ticketStampFor,
+} from "../components/TicketStub";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
@@ -90,6 +97,9 @@ export function EventDetailScreen() {
   const categoria = findCategory(categories, event.categoria);
   const shareUrl = window.location.href;
   const stamp = ticketStampFor(quorum);
+  const participantIds = commitments
+    .filter((c) => c.status !== "cancelado")
+    .map((c) => c.userId);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -141,188 +151,137 @@ export function EventDetailScreen() {
           </div>
         )}
 
-        {/* Mesmo conceito do feed: imagem com selos flutuando, o anel
-            de quórum sempre no mesmo canto, e o canhoto de ingresso
-            logo abaixo — tudo dentro de um único `group`, pra cair
-            2-3px junto quando o mouse passa. */}
-        <div className="group relative mx-4 mt-4 rounded-2xl overflow-hidden">
+        {/* Mesmo conceito do feed: hero minimalista (só ícone/capa +
+            nome), corpo principal em seções (data/hora/local,
+            confirmados) e canhoto de papel no fim — tudo dentro de um
+            único `group`, pra só o canhoto cair 2-3px quando o mouse
+            passa. */}
+        <div className="group relative mx-4 mt-4 rounded-2xl overflow-hidden bg-ink-900">
           <div className="relative">
             {celebrating && <Confetti />}
             {presenceCelebrating && <PresenceCelebration />}
             <div
-              className="w-full aspect-square flex items-center justify-center"
+              className="relative w-full min-h-[260px] flex flex-col items-center justify-center gap-4 px-8 py-10 text-center"
               style={
                 event.capaUrl
                   ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
                   : categoryGradientStyle(categoria.cor)
               }
             >
-              {!event.capaUrl && (
-                <span className="category-icon-float text-7xl opacity-90">{categoria.emoji}</span>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(11,14,26,0.15) 0%, rgba(11,14,26,0.55) 100%)" }} />
               {/* Brilho sutil sobre a capa/gradiente — impressão premium. */}
               <div className="ticket-sheen absolute inset-0 pointer-events-none" />
+              {!event.capaUrl && (
+                <span className="relative z-10 text-6xl opacity-90">
+                  <span className="category-icon-float">{categoria.emoji}</span>
+                </span>
+              )}
+              <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm">
+                {event.titulo}
+              </h2>
             </div>
 
             {!isCancelled && (
-              <>
-                <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                  <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
-                    {categoria.nome}
-                  </span>
-                  {stamp ? (
-                    <TicketStamp label={stamp.label} tone={stamp.tone} />
-                  ) : (
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
-                        isUrgent(event.dataHora, new Date().toISOString())
-                          ? "bg-coral-500 text-ink-950"
-                          : "bg-ink-950/60 backdrop-blur-sm text-ink-100"
-                      }`}
-                    >
-                      {getCountdownLabel(event.dataHora, new Date().toISOString())}
-                    </span>
-                  )}
-                </div>
-                <div className="absolute bottom-3 left-3">
-                  <button
-                    onClick={() => setShowParticipants(true)}
-                    className="bg-ink-950/60 backdrop-blur-sm rounded-full p-0.5"
-                    aria-label="Ver participantes"
-                  >
-                    <QuorumMeter quorum={quorum} size={52} />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-        </div>
-
-        {/* Evento cancelado: sem canhoto de papel (não há mais "ingresso"
-            válido) — só o essencial, no tom escuro normal do card. */}
-        {isCancelled && (
-          <div className="px-4 space-y-3">
-            <h2 className="font-display font-bold text-xl text-ink-100 leading-tight tracking-tight">
-              {event.titulo}
-            </h2>
-            <div className="flex items-center gap-4">
-              <button onClick={like.toggle} disabled={like.isPending} aria-label="Curtir">
-                <Heart
-                  size={26}
-                  strokeWidth={1.8}
-                  className={like.isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"}
-                />
-              </button>
-              <button
-                onClick={() =>
-                  document.getElementById("comentarios")?.scrollIntoView({ behavior: "smooth" })
-                }
-                aria-label="Ir para comentários"
-              >
-                <MessageCircle size={26} strokeWidth={1.8} className="text-ink-200" />
-              </button>
-              <button onClick={handleShare} aria-label="Compartilhar">
-                <Share2 size={24} strokeWidth={1.8} className="text-ink-200" />
-              </button>
-            </div>
-            {like.likeCount > 0 && (
-              <p className="text-sm font-semibold text-ink-200 -mt-1">
-                {like.likeCount} curtida{like.likeCount === 1 ? "" : "s"}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* A folha de papel do ingresso — a partir da costura com a
-            capa, código, anfitrião, título, ações e confirmados moram
-            juntos nela, como se o card inteiro fosse a parte
-            destacável do ingresso. */}
-        {!isCancelled && (
-          <TicketPaperFrame>
-            <TicketCodeRow
-              eventId={event.id}
-              shareUrl={shareUrl}
-              organizerName={organizador?.nome}
-              organizerPhotoUrl={organizador?.fotoUrl}
-            />
-
-            <div className="h-px bg-paper-ink/15 mx-4" />
-
-            <div className="px-4 pt-3 pb-4 space-y-3">
-              <h2 className="font-display font-bold text-xl text-paper-ink leading-tight tracking-tight">
-                {event.titulo}
-              </h2>
-
-              {/* Ações: curtir, comentar (rola até o chat/fotos), compartilhar, participar */}
-              <div className="flex items-center gap-4">
-                <button onClick={like.toggle} disabled={like.isPending} aria-label="Curtir">
-                  <Heart
-                    size={26}
-                    strokeWidth={1.8}
-                    className={like.isLiked ? "fill-coral-500 text-coral-500" : "text-paper-ink/70"}
-                  />
-                </button>
-                <button
-                  onClick={() =>
-                    document.getElementById("comentarios")?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  aria-label="Ir para comentários"
-                >
-                  <MessageCircle size={26} strokeWidth={1.8} className="text-paper-ink/70" />
-                </button>
-                <button onClick={handleShare} aria-label="Compartilhar">
-                  <Share2 size={24} strokeWidth={1.8} className="text-paper-ink/70" />
-                </button>
-
-                {!isCreator && (
-                  <button
-                    onClick={isCommitted ? handleCancel : handleCommitClick}
-                    disabled={isActing || (!isCommitted && quorum.vagasEsgotadas)}
-                    className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
-                      isCommitted
-                        ? "bg-quorum-500/15 border border-quorum-600/50 text-quorum-600"
-                        : "bg-coral-500 text-ink-950 disabled:opacity-50"
+              <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                <span className="inline-flex items-center gap-1.5 bg-ink-950/60 backdrop-blur-sm px-2.5 py-1 rounded-full text-[11px] font-semibold text-white">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: categoria.cor }} />
+                  {categoria.nome}
+                </span>
+                {stamp ? (
+                  <TicketStamp label={stamp.label} tone={stamp.tone} />
+                ) : (
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+                      isUrgent(event.dataHora, new Date().toISOString())
+                        ? "bg-coral-500 text-ink-950"
+                        : "bg-ink-950/60 backdrop-blur-sm text-white"
                     }`}
                   >
-                    {isCommitted
-                      ? "Participando ✓"
-                      : quorum.vagasEsgotadas
-                      ? "Vagas esgotadas"
-                      : "Participar"}
-                  </button>
-                )}
-              </div>
-
-              {like.likeCount > 0 && (
-                <p className="text-sm font-semibold text-paper-ink -mt-1">
-                  {like.likeCount} curtida{like.likeCount === 1 ? "" : "s"}
-                </p>
-              )}
-
-              <p className="text-sm text-paper-ink">
-                <span className="font-semibold">{quorum.vagasConfirmadas}</span> confirmado
-                {quorum.vagasConfirmadas === 1 ? "" : "s"} de {quorum.vagasTotal}
-                {quorum.quorumAtingido ? (
-                  <span className="text-quorum-600 font-semibold"> · quórum atingido 🔓</span>
-                ) : (
-                  <span className="text-paper-ink/50">
-                    {" "}
-                    · faltam {quorum.quorumMinimo - quorum.vagasConfirmadas} p/ quórum
+                    {getCountdownLabel(event.dataHora, new Date().toISOString())}
                   </span>
                 )}
-              </p>
+              </div>
+            )}
+          </div>
 
-              <button
-                onClick={() => setShowParticipants(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-coral-600"
-              >
-                <Users size={14} /> Ver participantes
-              </button>
-            </div>
-          </TicketPaperFrame>
+          {!isCancelled && (
+            <>
+              {/* Corpo principal, em três colunas — mais rápido de ler
+                  que texto corrido. */}
+              <TicketInfoGrid dataHora={event.dataHora} endereco={event.local.endereco} />
+
+              {/* Confirmados: o anel de quórum (assinatura do Zuvio) +
+                  quem já confirmou. */}
+              <TicketAttendance
+                quorum={quorum}
+                rightSlot={
+                  <button onClick={() => setShowParticipants(true)} aria-label="Ver participantes">
+                    {participantIds.length > 0 && <ConfirmedStack participantIds={participantIds} />}
+                  </button>
+                }
+              />
+
+              <TicketPerforation />
+
+              {/* O canhoto de papel — código, anfitrião e QR; é só essa
+                  folha que "cai" 2-3px quando o mouse passa no card. */}
+              <TicketPaperFrame>
+                <TicketCodeRow
+                  eventId={event.id}
+                  shareUrl={shareUrl}
+                  organizerName={organizador?.nome}
+                  organizerPhotoUrl={organizador?.fotoUrl}
+                />
+              </TicketPaperFrame>
+            </>
+          )}
+        </div>
+
+        {/* Ações sociais, fora do ingresso — como reações a um post,
+            não como parte do bilhete. */}
+        <div className="flex items-center gap-4 px-4">
+          <button onClick={like.toggle} disabled={like.isPending} aria-label="Curtir">
+            <Heart
+              size={26}
+              strokeWidth={1.8}
+              className={like.isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"}
+            />
+          </button>
+          <button
+            onClick={() =>
+              document.getElementById("comentarios")?.scrollIntoView({ behavior: "smooth" })
+            }
+            aria-label="Ir para comentários"
+          >
+            <MessageCircle size={26} strokeWidth={1.8} className="text-ink-200" />
+          </button>
+          <button onClick={handleShare} aria-label="Compartilhar">
+            <Share2 size={24} strokeWidth={1.8} className="text-ink-200" />
+          </button>
+
+          {!isCancelled && !isCreator && (
+            <button
+              onClick={isCommitted ? handleCancel : handleCommitClick}
+              disabled={isActing || (!isCommitted && quorum.vagasEsgotadas)}
+              className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
+                isCommitted
+                  ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
+                  : "bg-coral-500 text-ink-950 disabled:opacity-50"
+              }`}
+            >
+              {isCommitted
+                ? "Participando ✓"
+                : quorum.vagasEsgotadas
+                ? "Vagas esgotadas"
+                : "Participar"}
+            </button>
+          )}
+        </div>
+
+        {like.likeCount > 0 && (
+          <p className="text-sm font-semibold text-ink-200 px-4 -mt-1">
+            {like.likeCount} curtida{like.likeCount === 1 ? "" : "s"}
+          </p>
         )}
 
         {actionError && <p className="text-sm text-red-400 px-4">{actionError}</p>}

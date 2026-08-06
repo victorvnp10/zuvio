@@ -91,27 +91,34 @@ header {
 }
 
 /*
- * Assinatura visual do Zuvio ("O Convite"): a partir da linha de
- * perfuração, TUDO — código, anfitrião, título, ações, confirmados —
- * mora numa folha de papel só, contínua até o rodapé do card (ver
- * `TicketPaperFrame`/`TicketCodeRow` em `TicketStub.tsx`). É essa
- * folha inteira que se comporta como o canhoto destacável.
- *
- * Papel de verdade: microtextura (a única superfície com textura no
- * card — a capa continua lisa, em gradiente, pra ficar o contraste),
- * e picotes evidentes nas laterais (na costura com a capa) e no
- * rodapé (fechando a silhueta do ingresso).
+ * Assinatura visual do Zuvio ("O Convite"): capa → corpo principal
+ * escuro (data/hora/local + confirmados) → perfuração → canhoto de
+ * papel (código + anfitrião + QR). Só o canhoto é a parte
+ * "destacável" — o corpo principal não se move.
  */
+
+/* Fileira de furos redondos entre o corpo escuro e o canhoto — o
+   motivo mais reconhecível de ingresso de verdade. As áreas fora dos
+   furos ficam com a cor do papel (contínuas com o canhoto logo
+   abaixo); o vazado revela o fundo escuro do card por trás. */
+.ticket-perf-band {
+  height: 16px;
+  background: radial-gradient(circle at 8px 8px, transparent 7px, var(--color-paper-100) 7.5px);
+  background-size: 16px 16px;
+}
+
 .ticket-canhoto {
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-/* Ao passar o mouse no card (ver classe `group` no elemento pai), a
-   folha inteira "cai" 3px, como se estivesse prestes a se destacar. */
+/* Ao passar o mouse no card (ver classe `group` no elemento pai), só
+   o canhoto "cai" 3px, como se estivesse prestes a se destacar. */
 .group:hover .ticket-canhoto,
 .group:focus-within .ticket-canhoto {
   transform: translateY(3px);
 }
 
+/* Papel de verdade: microtextura (a única superfície com textura no
+   card — a capa continua lisa, em gradiente, pra ficar o contraste). */
 .ticket-paper {
   position: relative;
   background:
@@ -123,8 +130,8 @@ header {
     inset 0 10px 14px -12px rgba(0, 0, 0, 0.4);
 }
 
-/* Os furos ficam presos à costura com a capa (topo da folha), não no
-   meio — é ali que o ingresso "dobraria" pra destacar. */
+/* Picotes laterais bem evidentes, presos à costura entre a
+   perfuração e o canhoto. */
 .ticket-paper::before,
 .ticket-paper::after {
   content: "";
@@ -142,21 +149,6 @@ header {
 }
 .ticket-paper::after {
   right: -9px;
-}
-
-/* Fileira de furos no rodapé da folha inteira — o topo desta tira é
-   "mordido" por meios-círculos repetidos, criando uma borda picotada
-   contínua com a base do papel (mesma cor, sem emenda visível), que
-   agora fecha a silhueta do ingresso por baixo. */
-.ticket-stub-perf {
-  height: 8px;
-  background: var(--color-paper-200);
-  -webkit-mask-image: radial-gradient(circle 8px at 8px 0, transparent 8px, black 8.5px);
-  mask-image: radial-gradient(circle 8px at 8px 0, transparent 8px, black 8.5px);
-  -webkit-mask-size: 16px 8px;
-  mask-size: 16px 8px;
-  -webkit-mask-repeat: repeat-x;
-  mask-repeat: repeat-x;
 }
 
 /* Iluminação leve sobre o gradiente/capa — como se o card fosse
