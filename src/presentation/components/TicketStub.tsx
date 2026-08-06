@@ -44,7 +44,21 @@ export function ticketNumberFor(eventId: string): string {
   return String(hash % 100000).padStart(5, "0");
 }
 
-export function TicketStub({
+/** A folha de papel inteira do bilhete: código + anfitrião + TUDO que
+ * vem depois (título, ações, confirmados) moram juntos aqui — não só
+ * uma tarja fina. É essa folha inteira que "cai" 3px no hover, como
+ * se fosse a parte destacável do ingresso. `children` é o conteúdo
+ * de cada tela (varia entre feed e detalhe), sempre em tom de papel. */
+export function TicketPaperFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="ticket-canhoto">
+      <div className="ticket-paper">{children}</div>
+      <div className="ticket-stub-perf" />
+    </div>
+  );
+}
+
+export function TicketCodeRow({
   eventId,
   shareUrl,
   organizerName,
@@ -58,45 +72,38 @@ export function TicketStub({
   const code = `ZUV-${eventId.slice(0, 6).toUpperCase()}`;
 
   return (
-    <div className="ticket-canhoto">
-      {/* Tudo que identifica o bilhete — código, número e anfitrião —
-          fica dentro do canhoto de papel, não solto no corpo escuro
-          do card; o QR ocupa a lateral inteira, como um código de
-          barras de verdade. */}
-      <div className="ticket-stub flex items-stretch gap-3">
-        <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
-          <div>
-            <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
-              CÓDIGO DO EVENTO
-            </p>
-            <p className="font-mono text-lg font-bold tracking-[0.06em] text-paper-ink truncate">
-              {code}
-            </p>
-          </div>
-
-          <div className="h-px bg-paper-ink/15 my-2" />
-
-          <div className="flex items-center gap-2 min-w-0">
-            <Avatar fotoUrl={organizerPhotoUrl} nome={organizerName} size={24} />
-            <div className="min-w-0 leading-tight">
-              <p className="text-[10px] text-paper-ink/60">organizado por</p>
-              <p className="text-[12px] font-bold text-paper-ink truncate">
-                {organizerName ?? "..."}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="shrink-0 flex flex-col items-center justify-center gap-1">
-          <div className="bg-white p-1.5 rounded-md">
-            <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
-          </div>
-          <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
-            Nº {ticketNumberFor(eventId)}
+    <div className="flex items-stretch gap-3 px-4 pt-4 pb-3">
+      <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+        <div>
+          <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
+            CÓDIGO DO EVENTO
+          </p>
+          <p className="font-mono text-lg font-bold tracking-[0.06em] text-paper-ink truncate">
+            {code}
           </p>
         </div>
+
+        <div className="h-px bg-paper-ink/15 my-2" />
+
+        <div className="flex items-center gap-2 min-w-0">
+          <Avatar fotoUrl={organizerPhotoUrl} nome={organizerName} size={24} />
+          <div className="min-w-0 leading-tight">
+            <p className="text-[10px] text-paper-ink/60">organizado por</p>
+            <p className="text-[12px] font-bold text-paper-ink truncate">
+              {organizerName ?? "..."}
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="ticket-stub-perf" />
+
+      <div className="shrink-0 flex flex-col items-center justify-center gap-1">
+        <div className="bg-white p-1.5 rounded-md">
+          <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
+        </div>
+        <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
+          Nº {ticketNumberFor(eventId)}
+        </p>
+      </div>
     </div>
   );
 }

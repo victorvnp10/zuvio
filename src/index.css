@@ -91,29 +91,29 @@ header {
 }
 
 /*
- * Assinatura visual do Zuvio ("O Convite"): o canhoto de ingresso
- * entre a imagem e o texto do card — agora uma tira de papel de
- * verdade (ver `TicketStub.tsx`), não só uma linha tracejada.
+ * Assinatura visual do Zuvio ("O Convite"): a partir da linha de
+ * perfuração, TUDO — código, anfitrião, título, ações, confirmados —
+ * mora numa folha de papel só, contínua até o rodapé do card (ver
+ * `TicketPaperFrame`/`TicketCodeRow` em `TicketStub.tsx`). É essa
+ * folha inteira que se comporta como o canhoto destacável.
  *
- * Canhoto "de verdade": tira de papel colada sob a imagem, com
- * microtextura (a única superfície com textura no card — o corpo
- * principal continua liso, em gradiente, pra ficar o contraste), e
- * picotes evidentes nas laterais + rodapé. Some com o resto do card
- * quando não é o canhoto que está sendo desenhado.
+ * Papel de verdade: microtextura (a única superfície com textura no
+ * card — a capa continua lisa, em gradiente, pra ficar o contraste),
+ * e picotes evidentes nas laterais (na costura com a capa) e no
+ * rodapé (fechando a silhueta do ingresso).
  */
 .ticket-canhoto {
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-/* Ao passar o mouse no card (ver classe `group` no elemento pai), o
-   canhoto inteiro "cai" 3px, como se estivesse prestes a se destacar. */
+/* Ao passar o mouse no card (ver classe `group` no elemento pai), a
+   folha inteira "cai" 3px, como se estivesse prestes a se destacar. */
 .group:hover .ticket-canhoto,
 .group:focus-within .ticket-canhoto {
   transform: translateY(3px);
 }
 
-.ticket-stub {
+.ticket-paper {
   position: relative;
-  padding: 10px 16px 12px;
   background:
     repeating-linear-gradient(115deg, rgba(74, 63, 42, 0.045) 0 1px, transparent 1px 3px),
     repeating-linear-gradient(25deg, rgba(74, 63, 42, 0.035) 0 1px, transparent 1px 4px),
@@ -123,11 +123,13 @@ header {
     inset 0 10px 14px -12px rgba(0, 0, 0, 0.4);
 }
 
-.ticket-stub::before,
-.ticket-stub::after {
+/* Os furos ficam presos à costura com a capa (topo da folha), não no
+   meio — é ali que o ingresso "dobraria" pra destacar. */
+.ticket-paper::before,
+.ticket-paper::after {
   content: "";
   position: absolute;
-  top: 50%;
+  top: 0;
   width: 18px;
   height: 18px;
   background: var(--color-ink-900);
@@ -135,16 +137,17 @@ header {
   transform: translateY(-50%);
   z-index: 1;
 }
-.ticket-stub::before {
+.ticket-paper::before {
   left: -9px;
 }
-.ticket-stub::after {
+.ticket-paper::after {
   right: -9px;
 }
 
-/* Fileira de furos logo abaixo do canhoto — o topo desta tira é
+/* Fileira de furos no rodapé da folha inteira — o topo desta tira é
    "mordido" por meios-círculos repetidos, criando uma borda picotada
-   contínua com a base do papel (mesma cor, sem emenda visível). */
+   contínua com a base do papel (mesma cor, sem emenda visível), que
+   agora fecha a silhueta do ingresso por baixo. */
 .ticket-stub-perf {
   height: 8px;
   background: var(--color-paper-200);

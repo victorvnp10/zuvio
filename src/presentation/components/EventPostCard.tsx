@@ -14,7 +14,7 @@ import { QuorumMeter } from "./QuorumMeter";
 import { Confetti } from "./Confetti";
 import { PresenceCelebration } from "./PresenceCelebration";
 import { ParticipantsModal } from "./ParticipantsModal";
-import { TicketStamp, TicketStub, ticketStampFor } from "./TicketStub";
+import { TicketCodeRow, TicketPaperFrame, TicketStamp, ticketStampFor } from "./TicketStub";
 import { categoryGradientStyle } from "./CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
 import type { EventProposal, EventPhoto } from "../../domain/entities/types";
@@ -258,84 +258,90 @@ export function EventPostCard({
         </div>
       </div>
 
-      {/* Canhoto de ingresso — sem margem lateral, os picotes cortam
-          nas bordas do card (overflow hidden acima). Papel, código,
-          anfitrião e QR ficam todos dentro do canhoto, como um
-          ticket de verdade; cai 2-3px quando o mouse passa no card. */}
-      <TicketStub
-        eventId={event.id}
-        shareUrl={shareUrl}
-        organizerName={organizador?.nome}
-        organizerPhotoUrl={organizador?.fotoUrl}
-      />
+      {/* A folha de papel do ingresso — sem margem lateral, os picotes
+          cortam nas bordas do card (overflow hidden acima). A partir
+          da costura com a capa, TUDO (código, anfitrião, título,
+          ações, confirmados) mora nessa mesma folha, como se o card
+          inteiro, abaixo da imagem, fosse a parte destacável; cai
+          2-3px quando o mouse passa no card. */}
+      <TicketPaperFrame>
+        <TicketCodeRow
+          eventId={event.id}
+          shareUrl={shareUrl}
+          organizerName={organizador?.nome}
+          organizerPhotoUrl={organizador?.fotoUrl}
+        />
 
-      <div className="pt-3.5 px-4 pb-4">
-        {/* Título em destaque, logo abaixo da imagem */}
-        <button onClick={() => navigate(`/eventos/${event.id}`)} className="w-full text-left">
-          <h2 className="font-display font-bold text-[19px] leading-tight tracking-tight text-ink-100 mb-1">
-            {event.titulo}
-          </h2>
-          <p className={`text-xs text-ink-400 ${event.descricao ? "mb-1.5" : "mb-3"}`}>
-            {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })} ·{" "}
-            {event.local.endereco}
-          </p>
-          {event.descricao && (
-            <p className="text-sm text-ink-300 line-clamp-2 mb-3">{event.descricao}</p>
+        <div className="h-px bg-paper-ink/15 mx-4" />
+
+        <div className="pt-3 px-4 pb-4">
+          {/* Título em destaque */}
+          <button onClick={() => navigate(`/eventos/${event.id}`)} className="w-full text-left">
+            <h2 className="font-display font-bold text-[19px] leading-tight tracking-tight text-paper-ink mb-1">
+              {event.titulo}
+            </h2>
+            <p className={`text-xs text-paper-ink/60 ${event.descricao ? "mb-1.5" : "mb-3"}`}>
+              {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })} ·{" "}
+              {event.local.endereco}
+            </p>
+            {event.descricao && (
+              <p className="text-sm text-paper-ink/80 line-clamp-2 mb-3">{event.descricao}</p>
+            )}
+          </button>
+
+          {/* Ações: curtir, comentar, compartilhar — e Participar, decisivo */}
+          <div className="flex items-center gap-3.5">
+            <button onClick={handleLike} disabled={isLikePending} aria-label={isLiked ? "Descurtir" : "Curtir"}>
+              <Heart size={20} strokeWidth={1.8} className={isLiked ? "fill-coral-500 text-coral-500" : "text-paper-ink/70"} />
+            </button>
+            <button onClick={() => navigate(`/eventos/${event.id}`)} aria-label="Comentar">
+              <MessageCircle size={20} strokeWidth={1.8} className="text-paper-ink/70" />
+            </button>
+            <button onClick={handleShare} aria-label="Compartilhar">
+              <Share2 size={19} strokeWidth={1.8} className="text-paper-ink/70" />
+            </button>
+
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isCommitted) {
+                  onQuickCancel();
+                } else {
+                  const ok = await onQuickCommit();
+                  if (ok) celebrate();
+                }
+              }}
+              disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
+              className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
+                isOwnEvent
+                  ? "bg-paper-ink/10 text-paper-ink/40 cursor-default"
+                  : isCommitted
+                  ? "bg-quorum-500/15 border border-quorum-600/50 text-quorum-600"
+                  : "bg-coral-500 text-ink-950 disabled:opacity-50"
+              }`}
+            >
+              {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
+            </button>
+          </div>
+
+          {(likeCount > 0 || quorum.vagasConfirmadas > 0) && (
+            <p className="text-xs text-paper-ink/60 mt-3">
+              {likeCount > 0 && (
+                <span className="font-semibold text-paper-ink">
+                  {likeCount} curtida{likeCount === 1 ? "" : "s"}
+                </span>
+              )}
+              {likeCount > 0 && quorum.vagasConfirmadas > 0 && " · "}
+              {quorum.vagasConfirmadas > 0 && (
+                <>
+                  <span className="font-semibold text-paper-ink">{quorum.vagasConfirmadas}</span> confirmado
+                  {quorum.vagasConfirmadas === 1 ? "" : "s"} de {quorum.vagasTotal}
+                </>
+              )}
+            </p>
           )}
-        </button>
-
-        {/* Ações: curtir, comentar, compartilhar — e Participar, decisivo */}
-        <div className="flex items-center gap-3.5">
-          <button onClick={handleLike} disabled={isLikePending} aria-label={isLiked ? "Descurtir" : "Curtir"}>
-            <Heart size={20} strokeWidth={1.8} className={isLiked ? "fill-coral-500 text-coral-500" : "text-ink-200"} />
-          </button>
-          <button onClick={() => navigate(`/eventos/${event.id}`)} aria-label="Comentar">
-            <MessageCircle size={20} strokeWidth={1.8} className="text-ink-200" />
-          </button>
-          <button onClick={handleShare} aria-label="Compartilhar">
-            <Share2 size={19} strokeWidth={1.8} className="text-ink-200" />
-          </button>
-
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (isCommitted) {
-                onQuickCancel();
-              } else {
-                const ok = await onQuickCommit();
-                if (ok) celebrate();
-              }
-            }}
-            disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
-            className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
-              isOwnEvent
-                ? "bg-ink-800 text-ink-500 cursor-default"
-                : isCommitted
-                ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
-                : "bg-coral-500 text-ink-950 disabled:opacity-50"
-            }`}
-          >
-            {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
-          </button>
         </div>
-
-        {(likeCount > 0 || quorum.vagasConfirmadas > 0) && (
-          <p className="text-xs text-ink-400 mt-3">
-            {likeCount > 0 && (
-              <span className="font-semibold text-ink-200">
-                {likeCount} curtida{likeCount === 1 ? "" : "s"}
-              </span>
-            )}
-            {likeCount > 0 && quorum.vagasConfirmadas > 0 && " · "}
-            {quorum.vagasConfirmadas > 0 && (
-              <>
-                <span className="font-semibold text-ink-200">{quorum.vagasConfirmadas}</span> confirmado
-                {quorum.vagasConfirmadas === 1 ? "" : "s"} de {quorum.vagasTotal}
-              </>
-            )}
-          </p>
-        )}
-      </div>
+      </TicketPaperFrame>
 
       {showParticipants && (
         <ParticipantsModal
