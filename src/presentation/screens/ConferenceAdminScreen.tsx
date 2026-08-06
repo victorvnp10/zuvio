@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Star, Users } from "lucide-react";
 import { useEventDetail } from "../../application/hooks/useEventDetail";
 import { useConferenceAdmin } from "../../application/hooks/useConferenceAdmin";
@@ -35,8 +35,7 @@ export function ConferenceAdminScreen() {
 
   const isCreator = event.criadorId === user.id;
   if (event.tipoEvento !== "conferencia" || !isCreator) {
-    navigate(`/eventos/${eventId}`, { replace: true });
-    return null;
+    return <Navigate to={`/eventos/${eventId}`} replace />;
   }
 
   const totalCheckins = summaries.reduce((sum, s) => sum + s.checkins, 0);
