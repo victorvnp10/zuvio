@@ -1,6 +1,8 @@
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Clock, MapPin, Star } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Star, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import type { QuorumSummary } from "../../domain/services/QuorumService";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
@@ -182,45 +184,87 @@ export function TicketCodeRow({
   organizerName?: string;
   organizerPhotoUrl?: string | null;
 }) {
+  const [showQr, setShowQr] = useState(false);
   const code = `ZUV-${eventId.slice(0, 6).toUpperCase()}`;
 
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
-      <div className="min-w-0 flex flex-col justify-between py-0.5">
-        <div>
-          <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
-            CÓDIGO DO EVENTO
-          </p>
-          <p className="font-mono text-lg font-bold tracking-[0.06em] text-paper-ink truncate">
-            {code}
-          </p>
+    <>
+      <div className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
+        <div className="min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
+              CÓDIGO DO EVENTO
+            </p>
+            <p className="font-mono text-lg font-bold tracking-[0.06em] text-paper-ink truncate">
+              {code}
+            </p>
+          </div>
+
+          <div className="h-px bg-paper-ink/15 my-2" />
+
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar fotoUrl={organizerPhotoUrl} nome={organizerName} size={24} />
+            <div className="min-w-0 leading-tight">
+              <p className="text-[10px] text-paper-ink/60">organizado por</p>
+              <p className="text-[12px] font-bold text-paper-ink truncate">
+                {organizerName ?? "..."}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="h-px bg-paper-ink/15 my-2" />
-
-        <div className="flex items-center gap-2 min-w-0">
-          <Avatar fotoUrl={organizerPhotoUrl} nome={organizerName} size={24} />
-          <div className="min-w-0 leading-tight">
-            <p className="text-[10px] text-paper-ink/60">organizado por</p>
-            <p className="text-[12px] font-bold text-paper-ink truncate">
-              {organizerName ?? "..."}
+        {/* Separador tracejado antes do QR — a costura entre o texto do
+            canhoto e o "código de barras", como num ingresso real. */}
+        <div className="flex items-stretch pl-3 border-l-2 border-dashed border-paper-ink/20">
+          <div className="shrink-0 flex flex-col items-center justify-center gap-1">
+            <button
+              onClick={() => setShowQr(true)}
+              className="bg-white p-1.5 rounded-md"
+              aria-label="Ampliar QR code"
+            >
+              <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
+            </button>
+            <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
+              Nº {ticketNumberFor(eventId)}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Separador tracejado antes do QR — a costura entre o texto do
-          canhoto e o "código de barras", como num ingresso real. */}
-      <div className="flex items-stretch pl-3 border-l-2 border-dashed border-paper-ink/20">
-        <div className="shrink-0 flex flex-col items-center justify-center gap-1">
-          <div className="bg-white p-1.5 rounded-md">
-            <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
-          </div>
-          <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
-            Nº {ticketNumberFor(eventId)}
-          </p>
-        </div>
-      </div>
-    </div>
+      {/* QR ampliado — clicar no código pequeno abre uma versão grande,
+          fácil de ler por outro celular no check-in. Renderizado via
+          portal pro `position: fixed` cobrir a viewport inteira, e não
+          só o canhoto (que ganha um `transform` no hover). */}
+      {showQr &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-ink-950/80 flex items-center justify-center z-50 p-6"
+            onClick={() => setShowQr(false)}
+          >
+            <div
+              className="bg-paper-100 rounded-3xl p-6 flex flex-col items-center gap-4 max-w-xs w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between w-full">
+                <p className="font-mono text-sm font-bold tracking-[0.1em] text-paper-ink">{code}</p>
+                <button
+                  onClick={() => setShowQr(false)}
+                  className="text-paper-ink/50 hover:text-paper-ink"
+                  aria-label="Fechar"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="bg-white p-3 rounded-xl">
+                <QRCodeSVG value={shareUrl} size={240} bgColor="#ffffff" fgColor="#2A2013" />
+              </div>
+              <p className="text-xs text-paper-ink/60 text-center">
+                Aponte a câmera para fazer check-in ou compartilhar o evento.
+              </p>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
