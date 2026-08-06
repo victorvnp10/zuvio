@@ -427,6 +427,23 @@ export interface Database {
           checkin_em: string;
         };
       };
+      activity_ratings: {
+        Row: {
+          id: string;
+          activity_id: string;
+          user_id: string;
+          nota: number;
+          comentario: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          activity_id: string;
+          user_id: string;
+          nota: number;
+          comentario?: string | null;
+        };
+        Update: Partial<{ nota: number; comentario: string | null }>;
+      };
       trophies: {
         Row: {
           id: string;
@@ -490,6 +507,10 @@ export interface Database {
       checkin_activity: {
         Args: { p_activity_id: string; p_lat: number | null; p_lng: number | null };
         Returns: Database["public"]["Tables"]["activity_checkins"]["Row"];
+      };
+      get_activity_rating_summary: {
+        Args: { p_activity_id: string };
+        Returns: { media: number | null; total: number };
       };
       redeem_invite: {
         Args: { p_codigo: string };

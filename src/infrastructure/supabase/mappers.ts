@@ -1,6 +1,7 @@
 import type { Database } from "./database.types";
 import type {
   ActivityCheckin,
+  ActivityRating,
   Category,
   ChatMessage,
   CollaborativeItem,
@@ -38,6 +39,7 @@ type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type TrophyRow = Database["public"]["Tables"]["trophies"]["Row"];
 type ConferenceActivityRow = Database["public"]["Tables"]["conference_activities"]["Row"];
 type ActivityCheckinRow = Database["public"]["Tables"]["activity_checkins"]["Row"];
+type ActivityRatingRow = Database["public"]["Tables"]["activity_ratings"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -132,6 +134,15 @@ export const toActivityCheckin = (row: ActivityCheckinRow): ActivityCheckin => (
   activityId: row.activity_id,
   userId: row.user_id,
   checkinEm: row.checkin_em,
+});
+
+export const toActivityRating = (row: ActivityRatingRow): ActivityRating => ({
+  id: row.id,
+  activityId: row.activity_id,
+  userId: row.user_id,
+  nota: row.nota,
+  comentario: row.comentario,
+  criadoEm: row.criado_em,
 });
 
 export const toCommitment = (row: CommitmentRow): Commitment => ({

@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, MapPin, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, MapPin, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { useConferenceActivities } from "../../application/hooks/useConferenceActivities";
 import { useActivityCheckins } from "../../application/hooks/useActivityCheckins";
+import { useActivityRating } from "../../application/hooks/useActivityRating";
 import { MediaStorageRepository } from "../../infrastructure/supabase/repositories/MediaStorageRepository";
 import type { ActivityInput } from "../../infrastructure/supabase/repositories/ActivitiesRepository";
 import type { ConferenceActivity } from "../../domain/entities/types";
@@ -180,6 +181,38 @@ function ActivityCoverUpload({ activity, onUploaded }: { activity: ConferenceAct
   );
 }
 
+/** Estrelas clicáveis (própria nota) + média pública ao lado — só
+ * aparece pra quem já fez check-in (mesma regra da RLS de insert). */
+function ActivityRatingWidget({ activityId }: { activityId: string }) {
+  const { myRating, summary, rate, isSubmitting } = useActivityRating(activityId);
+  const [hoverStar, setHoverStar] = useState(0);
+  const activeStar = hoverStar || myRating?.nota || 0;
+
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="flex gap-0.5" onMouseLeave={() => setHoverStar(0)}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => rate(star)}
+            onMouseEnter={() => setHoverStar(star)}
+            disabled={isSubmitting}
+            aria-label={`${star} estrelas`}
+          >
+            <Star size={14} className={star <= activeStar ? "fill-amber-500 text-amber-500" : "text-ink-600"} />
+          </button>
+        ))}
+      </div>
+      {summary && summary.total > 0 && (
+        <span className="text-[10px] text-ink-500">
+          {summary.media?.toFixed(1)} ({summary.total})
+        </span>
+      )}
+    </div>
+  );
+}
+
 function ActivityRow({
   activity,
   isCreator,
@@ -258,6 +291,7 @@ function ActivityRow({
             )}
           </div>
         )}
+        {canCheckin && isCheckedIn && <ActivityRatingWidget activityId={activity.id} />}
       </div>
       {isCreator && (
         <div className="flex flex-col gap-1 shrink-0">

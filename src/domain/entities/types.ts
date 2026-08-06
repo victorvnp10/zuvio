@@ -171,6 +171,25 @@ export interface ActivityCheckin {
   checkinEm: string;
 }
 
+/** Avaliação (1 a 5 estrelas) de uma atividade específica — feedback
+ * sobre a qualidade da sessão em si, não sobre outro participante
+ * (isso já existe em `Rating`, conceito diferente). */
+export interface ActivityRating {
+  id: string;
+  activityId: string;
+  userId: string;
+  nota: number;
+  comentario: string | null;
+  criadoEm: string;
+}
+
+/** Agregado público de `get_activity_rating_summary()` — nunca expõe
+ * nota/comentário individual de outra pessoa. */
+export interface ActivityRatingSummary {
+  media: number | null;
+  total: number;
+}
+
 /** Item da lista colaborativa ("o que levar"). */
 export interface CollaborativeItem {
   id: string;
