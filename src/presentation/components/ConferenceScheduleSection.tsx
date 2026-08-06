@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, MapPin, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { BarChart3, CalendarDays, MapPin, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { useConferenceActivities } from "../../application/hooks/useConferenceActivities";
 import { useActivityCheckins } from "../../application/hooks/useActivityCheckins";
 import { useActivityRating } from "../../application/hooks/useActivityRating";
@@ -324,6 +325,7 @@ export function ConferenceScheduleSection({
   isCreator: boolean;
   isCommitted: boolean;
 }) {
+  const navigate = useNavigate();
   const { data: activities, isLoading, createActivity, updateActivity, removeActivity, isSubmitting, error } =
     useConferenceActivities(eventId);
   const {
@@ -344,13 +346,23 @@ export function ConferenceScheduleSection({
         <h3 className="font-display font-semibold flex items-center gap-2">
           <CalendarDays size={16} /> Programação
         </h3>
-        {isCreator && !showCreateForm && (
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-1 text-xs font-semibold text-coral-500"
-          >
-            <Plus size={14} /> Atividade
-          </button>
+        {isCreator && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/eventos/${eventId}/conferencia-admin`)}
+              className="flex items-center gap-1 text-xs font-semibold text-ink-300"
+            >
+              <BarChart3 size={14} /> Painel
+            </button>
+            {!showCreateForm && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="flex items-center gap-1 text-xs font-semibold text-coral-500"
+              >
+                <Plus size={14} /> Atividade
+              </button>
+            )}
+          </div>
         )}
       </div>
 

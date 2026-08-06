@@ -6,6 +6,7 @@ import { CompleteProfileScreen } from "./presentation/screens/CompleteProfileScr
 import { DiscoveryFeedScreen } from "./presentation/screens/DiscoveryFeedScreen";
 import { EventDetailScreen } from "./presentation/screens/EventDetailScreen";
 import { EditEventScreen } from "./presentation/screens/EditEventScreen";
+import { ConferenceAdminScreen } from "./presentation/screens/ConferenceAdminScreen";
 import { CreateEventScreen } from "./presentation/screens/CreateEventScreen";
 import { ProfileScreen } from "./presentation/screens/ProfileScreen";
 import { MyEventsScreen } from "./presentation/screens/MyEventsScreen";
@@ -125,6 +126,14 @@ export default function App() {
           element={
             <RequireAuth>
               <EditEventScreen />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/eventos/:eventId/conferencia-admin"
+          element={
+            <RequireAuth>
+              <ConferenceAdminScreen />
             </RequireAuth>
           }
         />
