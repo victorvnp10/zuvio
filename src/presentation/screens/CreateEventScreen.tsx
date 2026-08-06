@@ -34,6 +34,10 @@ const TIPO_EVENTO_LABELS: Record<TipoEvento, { label: string; description: strin
     label: "Colaborativo",
     description: "Lista do que cada um vai levar, com custo opcional dividido entre todos.",
   },
+  conferencia: {
+    label: "Conferência",
+    description: "Pode durar vários dias, com uma programação de atividades — cada uma com check-in e avaliação próprios.",
+  },
 };
 
 const LISTA_COLABORATIVA_LABELS: Record<ModoListaColaborativa, string> = {
@@ -70,6 +74,7 @@ export function CreateEventScreen() {
   const [quorumMinimo, setQuorumMinimo] = useState(3);
 
   const [tipoEvento, setTipoEvento] = useState<TipoEvento>("livre");
+  const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
   const [valorEntrada, setValorEntrada] = useState<number>(0);
   const [linkPagamento, setLinkPagamento] = useState("");
   const [modoListaColaborativa, setModoListaColaborativa] = useState<ModoListaColaborativa>("predefinida");
@@ -89,6 +94,10 @@ export function CreateEventScreen() {
       titulo,
       descricao,
       dataHoraISO: new Date(dataHora).toISOString(),
+      dataHoraFimISO:
+        tipoEvento === "conferencia" && dataHoraFimConferencia
+          ? new Date(dataHoraFimConferencia).toISOString()
+          : null,
       endereco,
       geo,
       modalidade,
@@ -370,6 +379,25 @@ export function CreateEventScreen() {
                 <p className="text-xs text-ink-500 mt-1">
                   O app só guarda e mostra este link — não processa pagamento nenhum. Quem
                   confirmar presença paga por aqui e apresenta o comprovante na entrada.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {tipoEvento === "conferencia" && (
+            <div className="space-y-3 bg-ink-800/40 border border-ink-700 rounded-xl p-4">
+              <div>
+                <label className="block text-sm text-ink-400 mb-1">Data e horário de término</label>
+                <input
+                  type="datetime-local"
+                  value={dataHoraFimConferencia}
+                  onChange={(e) => setDataHoraFimConferencia(e.target.value)}
+                  min={dataHora}
+                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
+                />
+                <p className="text-xs text-ink-500 mt-1">
+                  "Data e horário" (passo anterior) é o início. As atividades de cada dia da
+                  programação são cadastradas depois, na página do evento já criado.
                 </p>
               </div>
             </div>

@@ -14,6 +14,9 @@ export interface CreateEventInput {
   titulo: string;
   descricao: string;
   dataHoraISO: string;
+  /** Obrigatória quando `tipoEvento === "conferencia"` — o banco rejeita
+   * a criação sem ela (constraint `conferencia_tem_data_fim`). */
+  dataHoraFimISO?: string | null;
   endereco: string;
   geo: { lat: number; lng: number } | null;
   modalidade: EventProposal["modalidade"];
@@ -36,6 +39,7 @@ export interface UpdateEventInput {
   endereco?: string;
   geo?: { lat: number; lng: number } | null;
   dataHoraISO?: string;
+  dataHoraFimISO?: string | null;
   categoria?: EventCategory;
   modalidade?: EventProposal["modalidade"];
   vagasTotal?: number;
@@ -97,6 +101,7 @@ export const EventsRepository = {
         titulo: input.titulo,
         descricao: input.descricao,
         data_hora: input.dataHoraISO,
+        data_hora_fim: input.dataHoraFimISO ?? null,
         endereco: input.endereco,
         geo_lat: input.geo?.lat ?? null,
         geo_lng: input.geo?.lng ?? null,
@@ -133,6 +138,7 @@ export const EventsRepository = {
     if (changes.descricao !== undefined) patch.descricao = changes.descricao;
     if (changes.endereco !== undefined) patch.endereco = changes.endereco;
     if (changes.dataHoraISO !== undefined) patch.data_hora = changes.dataHoraISO;
+    if (changes.dataHoraFimISO !== undefined) patch.data_hora_fim = changes.dataHoraFimISO;
     if (changes.categoria !== undefined) patch.categoria = changes.categoria;
     if (changes.modalidade !== undefined) patch.modalidade = changes.modalidade;
     if (changes.vagasTotal !== undefined) patch.vagas_total = changes.vagasTotal;

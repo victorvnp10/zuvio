@@ -28,4 +28,9 @@ export const MediaStorageRepository = {
     const randomId = crypto.randomUUID();
     return `photos/${eventId}/${randomId}.${ext}`;
   },
+
+  activityCoverPath(activityId: string, file: File): string {
+    const ext = file.name.split(".").pop() || "jpg";
+    return `activity-covers/${activityId}.${ext}`;
+  },
 };

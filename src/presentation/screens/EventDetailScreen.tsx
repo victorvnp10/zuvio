@@ -37,6 +37,7 @@ import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
 import { EventCostSection } from "../components/EventCostSection";
 import { CollaborativeListSection } from "../components/CollaborativeListSection";
+import { ConferenceScheduleSection } from "../components/ConferenceScheduleSection";
 import { EventPhotosSection } from "../components/EventPhotosSection";
 import { InviteLinkSection } from "../components/InviteLinkSection";
 import { BottomNav } from "../layout/BottomNav";
@@ -325,6 +326,8 @@ export function EventDetailScreen() {
             <span className="flex items-center gap-2">
               <CalendarDays size={16} />
               {format(new Date(event.dataHora), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+              {event.dataHoraFim &&
+                ` até ${format(new Date(event.dataHoraFim), "dd 'de' MMMM", { locale: ptBR })}`}
             </span>
             <span className="flex items-center gap-2">
               <MapPin size={16} />
@@ -360,6 +363,10 @@ export function EventDetailScreen() {
               currentUserId={user.id}
               isCreator={isCreator}
             />
+          )}
+
+          {event.tipoEvento === "conferencia" && eventId && (
+            <ConferenceScheduleSection eventId={eventId} isCreator={isCreator} isCommitted={Boolean(isCommitted)} />
           )}
 
           {/* Chat primeiro — é o que ajuda a organizar o evento, então

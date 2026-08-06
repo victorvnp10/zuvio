@@ -26,6 +26,7 @@ const TIPO_EVENTO_LABELS: Record<TipoEvento, string> = {
   livre: "Livre",
   pago: "Pago",
   colaborativo: "Colaborativo",
+  conferencia: "Conferência",
 };
 
 const LISTA_COLABORATIVA_LABELS: Record<ModoListaColaborativa, string> = {
@@ -68,6 +69,7 @@ export function EditEventScreen() {
   const [quorumMinimo, setQuorumMinimo] = useState(3);
 
   const [tipoEvento, setTipoEvento] = useState<TipoEvento>("livre");
+  const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
   const [valorEntrada, setValorEntrada] = useState(0);
   const [linkPagamento, setLinkPagamento] = useState("");
   const [modoListaColaborativa, setModoListaColaborativa] = useState<ModoListaColaborativa>("predefinida");
@@ -87,6 +89,7 @@ export function EditEventScreen() {
       setVagasTotal(event.vagasTotal);
       setQuorumMinimo(event.quorumMinimo);
       setTipoEvento(event.tipoEvento);
+      setDataHoraFimConferencia(event.dataHoraFim ? toDatetimeLocalValue(event.dataHoraFim) : "");
       setValorEntrada(event.valorEntrada ?? 0);
       setLinkPagamento(event.linkPagamento ?? "");
       setModoListaColaborativa(event.modoListaColaborativa ?? "predefinida");
@@ -126,6 +129,10 @@ export function EditEventScreen() {
       modoCustoColaborativo,
       valorPorPessoa,
       valorTotalRateio,
+      dataHoraISO: new Date(dataHora).toISOString(),
+      dataHoraFimISO: tipoEvento === "conferencia" && dataHoraFimConferencia
+        ? new Date(dataHoraFimConferencia).toISOString()
+        : null,
     });
     if (eventTypeError) {
       setValidationError(eventTypeError);
@@ -137,6 +144,9 @@ export function EditEventScreen() {
       descricao,
       endereco,
       dataHoraISO: new Date(dataHora).toISOString(),
+      dataHoraFimISO: tipoEvento === "conferencia" && dataHoraFimConferencia
+        ? new Date(dataHoraFimConferencia).toISOString()
+        : null,
       categoria,
       modalidade,
       vagasTotal,
@@ -314,7 +324,7 @@ export function EditEventScreen() {
 
           <div className="border-t border-ink-700 pt-4">
             <label className="block text-sm text-ink-400 mb-2">Tipo de evento</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {(Object.keys(TIPO_EVENTO_LABELS) as TipoEvento[]).map((t) => (
                 <button
                   key={t}
@@ -353,6 +363,24 @@ export function EditEventScreen() {
                   onChange={(e) => setLinkPagamento(e.target.value)}
                   className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
                 />
+              </div>
+            </div>
+          )}
+
+          {tipoEvento === "conferencia" && (
+            <div className="space-y-3 bg-ink-800/40 border border-ink-700 rounded-xl p-4">
+              <div>
+                <label className="block text-sm text-ink-400 mb-1">Data e horário de término</label>
+                <input
+                  type="datetime-local"
+                  value={dataHoraFimConferencia}
+                  onChange={(e) => setDataHoraFimConferencia(e.target.value)}
+                  min={dataHora}
+                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
+                />
+                <p className="text-xs text-ink-500 mt-1">
+                  A programação de atividades é gerenciada na página do evento.
+                </p>
               </div>
             </div>
           )}

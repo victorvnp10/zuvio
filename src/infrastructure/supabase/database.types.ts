@@ -83,6 +83,8 @@ export interface Database {
           titulo: string;
           descricao: string;
           data_hora: string;
+          /** Só preenchida para tipo_evento = 'conferencia'. */
+          data_hora_fim: string | null;
           endereco: string;
           geo_lat: number | null;
           geo_lng: number | null;
@@ -92,7 +94,7 @@ export interface Database {
           quorum_minimo: number;
           status: EventStatusRow;
           criado_em: string;
-          tipo_evento: "livre" | "pago" | "colaborativo";
+          tipo_evento: "livre" | "pago" | "colaborativo" | "conferencia";
           valor_entrada: number | null;
           link_pagamento: string | null;
           modo_lista_colaborativa: "predefinida" | "livre" | "mista" | null;
@@ -378,6 +380,53 @@ export interface Database {
           ativo: boolean;
         }>;
       };
+      conference_activities: {
+        Row: {
+          id: string;
+          event_id: string;
+          titulo: string;
+          descricao: string;
+          local: string;
+          geo_lat: number | null;
+          geo_lng: number | null;
+          capa_url: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem: number;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          titulo: string;
+          descricao?: string;
+          local: string;
+          geo_lat?: number | null;
+          geo_lng?: number | null;
+          capa_url?: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem?: number;
+        };
+        Update: Partial<{
+          titulo: string;
+          descricao: string;
+          local: string;
+          geo_lat: number | null;
+          geo_lng: number | null;
+          capa_url: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem: number;
+        }>;
+      };
+      activity_checkins: {
+        Row: {
+          id: string;
+          activity_id: string;
+          user_id: string;
+          checkin_em: string;
+        };
+      };
       trophies: {
         Row: {
           id: string;
@@ -437,6 +486,10 @@ export interface Database {
       conclude_past_events: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      checkin_activity: {
+        Args: { p_activity_id: string; p_lat: number | null; p_lng: number | null };
+        Returns: Database["public"]["Tables"]["activity_checkins"]["Row"];
       };
       redeem_invite: {
         Args: { p_codigo: string };

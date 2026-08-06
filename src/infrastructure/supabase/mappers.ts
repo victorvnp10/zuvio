@@ -1,9 +1,11 @@
 import type { Database } from "./database.types";
 import type {
+  ActivityCheckin,
   Category,
   ChatMessage,
   CollaborativeItem,
   Commitment,
+  ConferenceActivity,
   EarnedTrophy,
   EventAnnouncement,
   EventPhoto,
@@ -34,6 +36,8 @@ type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 type GroupInviteRow = Database["public"]["Tables"]["group_invites"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type TrophyRow = Database["public"]["Tables"]["trophies"]["Row"];
+type ConferenceActivityRow = Database["public"]["Tables"]["conference_activities"]["Row"];
+type ActivityCheckinRow = Database["public"]["Tables"]["activity_checkins"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -87,6 +91,7 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   titulo: row.titulo,
   descricao: row.descricao,
   dataHora: row.data_hora,
+  dataHoraFim: row.data_hora_fim,
   local: {
     endereco: row.endereco,
     geo: row.geo_lat != null && row.geo_lng != null ? { lat: row.geo_lat, lng: row.geo_lng } : null,
@@ -106,6 +111,27 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   modoCustoColaborativo: row.modo_custo_colaborativo,
   valorPorPessoa: row.valor_por_pessoa,
   valorTotalRateio: row.valor_total_rateio,
+});
+
+export const toConferenceActivity = (row: ConferenceActivityRow): ConferenceActivity => ({
+  id: row.id,
+  eventId: row.event_id,
+  titulo: row.titulo,
+  descricao: row.descricao,
+  local: row.local,
+  geo: row.geo_lat != null && row.geo_lng != null ? { lat: row.geo_lat, lng: row.geo_lng } : null,
+  capaUrl: row.capa_url,
+  dataHoraInicio: row.data_hora_inicio,
+  dataHoraFim: row.data_hora_fim,
+  ordem: row.ordem,
+  criadoEm: row.criado_em,
+});
+
+export const toActivityCheckin = (row: ActivityCheckinRow): ActivityCheckin => ({
+  id: row.id,
+  activityId: row.activity_id,
+  userId: row.user_id,
+  checkinEm: row.checkin_em,
 });
 
 export const toCommitment = (row: CommitmentRow): Commitment => ({

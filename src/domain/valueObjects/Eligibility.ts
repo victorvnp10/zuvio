@@ -98,3 +98,50 @@ export const evaluateCheckinEligibility = ({
     distanceMeters,
   };
 };
+
+/**
+ * Check-in de atividade de conferência — janela mais curta que a do
+ * evento (que é de horas): a atividade já tem início e fim próprios,
+ * então o check-in fica atrelado a eles, não a um único instante.
+ */
+export const ACTIVITY_CHECKIN_WINDOW_MINUTES_BEFORE = 15;
+export const ACTIVITY_CHECKIN_WINDOW_MINUTES_AFTER_END = 30;
+
+export const isWithinActivityCheckinWindow = (
+  activityStartISO: string,
+  activityEndISO: string,
+  nowISO: string
+): boolean => {
+  const start = new Date(activityStartISO).getTime();
+  const end = new Date(activityEndISO).getTime();
+  const now = new Date(nowISO).getTime();
+  return (
+    now >= start - ACTIVITY_CHECKIN_WINDOW_MINUTES_BEFORE * 60_000 &&
+    now <= end + ACTIVITY_CHECKIN_WINDOW_MINUTES_AFTER_END * 60_000
+  );
+};
+
+export const evaluateActivityCheckinEligibility = ({
+  userLocation,
+  activityLocation,
+  activityStartISO,
+  activityEndISO,
+  nowISO,
+}: {
+  userLocation: GeoPoint;
+  activityLocation: GeoPoint;
+  activityStartISO: string;
+  activityEndISO: string;
+  nowISO: string;
+}): CheckinEligibility => {
+  const distanceMeters = distanceInMeters(userLocation, activityLocation);
+  const isWithinRadius = distanceMeters <= CHECKIN_RADIUS_METERS;
+  const isWithinTimeWindow = isWithinActivityCheckinWindow(activityStartISO, activityEndISO, nowISO);
+
+  return {
+    isWithinRadius,
+    isWithinTimeWindow,
+    isEligible: isWithinRadius && isWithinTimeWindow,
+    distanceMeters,
+  };
+};

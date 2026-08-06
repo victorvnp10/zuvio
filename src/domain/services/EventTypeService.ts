@@ -20,6 +20,8 @@ export interface EventTypeInput {
   modoCustoColaborativo?: ModoCustoColaborativo | null;
   valorPorPessoa?: number | null;
   valorTotalRateio?: number | null;
+  dataHoraISO?: string;
+  dataHoraFimISO?: string | null;
 }
 
 export const validateEventType = (input: EventTypeInput): string | null => {
@@ -42,6 +44,15 @@ export const validateEventType = (input: EventTypeInput): string | null => {
       if (!input.valorTotalRateio || input.valorTotalRateio <= 0) {
         return "Informe o valor total a ser rateado.";
       }
+    }
+  }
+
+  if (input.tipoEvento === "conferencia") {
+    if (!input.dataHoraFimISO) {
+      return "Informe a data de término da conferência.";
+    }
+    if (input.dataHoraISO && new Date(input.dataHoraFimISO) < new Date(input.dataHoraISO)) {
+      return "A data de término não pode ser antes da data de início.";
     }
   }
 

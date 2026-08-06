@@ -97,7 +97,7 @@ export interface EarnedTrophy extends Trophy {
   conquistadoEm: string;
 }
 
-export type TipoEvento = "livre" | "pago" | "colaborativo";
+export type TipoEvento = "livre" | "pago" | "colaborativo" | "conferencia";
 export type ModoListaColaborativa = "predefinida" | "livre" | "mista";
 export type ModoCustoColaborativo = "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes";
 
@@ -108,6 +108,9 @@ export interface EventProposal {
   titulo: string;
   descricao: string;
   dataHora: string;
+  /** Só preenchida quando `tipoEvento === "conferencia"` — a data/hora
+   * de início de um evento comum já é suficiente pra durar um dia só. */
+  dataHoraFim: string | null;
   local: {
     endereco: string;
     geo: GeoPoint | null;
@@ -140,6 +143,32 @@ export interface EventProposal {
   modoCustoColaborativo: ModoCustoColaborativo | null;
   valorPorPessoa: number | null;
   valorTotalRateio: number | null;
+}
+
+/** Uma atividade da programação de uma conferência (tipoEvento ===
+ * "conferencia") — título, descrição, local e capa próprios, como se
+ * fosse um evento isolado dentro do evento maior. */
+export interface ConferenceActivity {
+  id: string;
+  eventId: string;
+  titulo: string;
+  descricao: string;
+  local: string;
+  geo: GeoPoint | null;
+  capaUrl: string | null;
+  dataHoraInicio: string;
+  dataHoraFim: string;
+  ordem: number;
+  criadoEm: string;
+}
+
+/** Check-in de um participante numa atividade específica de uma
+ * conferência — independente do commitment do evento como um todo. */
+export interface ActivityCheckin {
+  id: string;
+  activityId: string;
+  userId: string;
+  checkinEm: string;
 }
 
 /** Item da lista colaborativa ("o que levar"). */
