@@ -259,10 +259,15 @@ export function EventPostCard({
       </div>
 
       {/* Canhoto de ingresso — sem margem lateral, os picotes cortam
-          nas bordas do card (overflow hidden acima). Papel, QR e
-          código reforçam que isto é um ticket de verdade, não só um
-          post de feed; cai 2-3px quando o mouse passa no card. */}
-      <TicketStub eventId={event.id} shareUrl={shareUrl} />
+          nas bordas do card (overflow hidden acima). Papel, código,
+          anfitrião e QR ficam todos dentro do canhoto, como um
+          ticket de verdade; cai 2-3px quando o mouse passa no card. */}
+      <TicketStub
+        eventId={event.id}
+        shareUrl={shareUrl}
+        organizerName={organizador?.nome}
+        organizerPhotoUrl={organizador?.fotoUrl}
+      />
 
       <div className="pt-3.5 px-4 pb-4">
         {/* Título em destaque, logo abaixo da imagem */}
@@ -314,16 +319,8 @@ export function EventPostCard({
           </button>
         </div>
 
-        {/* Anfitrião, embaixo — assinatura de quem organiza */}
-        <div className="flex items-center gap-2 mt-3 text-xs text-ink-400">
-          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={20} />
-          <span>
-            organizado por <b className="text-ink-200 font-bold">{organizador?.nome ?? "..."}</b>
-          </span>
-        </div>
-
         {(likeCount > 0 || quorum.vagasConfirmadas > 0) && (
-          <p className="text-xs text-ink-400 mt-2">
+          <p className="text-xs text-ink-400 mt-3">
             {likeCount > 0 && (
               <span className="font-semibold text-ink-200">
                 {likeCount} curtida{likeCount === 1 ? "" : "s"}

@@ -24,7 +24,6 @@ import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import { QuorumMeter } from "../components/QuorumMeter";
 import { categoryGradientStyle } from "../components/CategoryBadge";
 import { useCategories, findCategory } from "../../application/hooks/useCategories";
-import { Avatar } from "../components/Avatar";
 import { Confetti } from "../components/Confetti";
 import { PresenceCelebration } from "../components/PresenceCelebration";
 import { CheckinReward } from "../components/CheckinReward";
@@ -200,9 +199,16 @@ export function EventDetailScreen() {
             )}
           </div>
 
-          {/* Canhoto de ingresso — papel, QR e código reforçam que o
-              card é um ticket de verdade, não só um post de feed. */}
-          {!isCancelled && <TicketStub eventId={event.id} shareUrl={shareUrl} />}
+          {/* Canhoto de ingresso — papel, código, anfitrião e QR ficam
+              todos dentro do canhoto, como um ticket de verdade. */}
+          {!isCancelled && (
+            <TicketStub
+              eventId={event.id}
+              shareUrl={shareUrl}
+              organizerName={organizador?.nome}
+              organizerPhotoUrl={organizador?.fotoUrl}
+            />
+          )}
         </div>
 
         {/* Título em destaque, logo abaixo da imagem */}
@@ -281,14 +287,6 @@ export function EventDetailScreen() {
             <Users size={14} /> Ver participantes
           </button>
         )}
-
-        {/* Anfitrião, embaixo — assinatura de quem organiza */}
-        <div className="flex items-center gap-2 px-4 pt-1 text-xs text-ink-400">
-          <Avatar fotoUrl={organizador?.fotoUrl} nome={organizador?.nome} size={20} />
-          <span>
-            organizado por <b className="text-ink-200 font-bold">{organizador?.nome ?? "..."}</b>
-          </span>
-        </div>
 
         {actionError && <p className="text-sm text-red-400 px-4">{actionError}</p>}
 

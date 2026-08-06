@@ -1,5 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import type { QuorumSummary } from "../../domain/services/QuorumService";
+import { Avatar } from "./Avatar";
 
 type StampTone = "confirmed" | "urgent" | "sold-out";
 
@@ -43,22 +44,56 @@ export function ticketNumberFor(eventId: string): string {
   return String(hash % 100000).padStart(5, "0");
 }
 
-export function TicketStub({ eventId, shareUrl }: { eventId: string; shareUrl: string }) {
+export function TicketStub({
+  eventId,
+  shareUrl,
+  organizerName,
+  organizerPhotoUrl,
+}: {
+  eventId: string;
+  shareUrl: string;
+  organizerName?: string;
+  organizerPhotoUrl?: string | null;
+}) {
   const code = `ZUV-${eventId.slice(0, 6).toUpperCase()}`;
 
   return (
     <div className="ticket-canhoto">
-      <div className="ticket-stub flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-[9px] tracking-[0.2em] text-paper-ink/55">
-            TICKET Nº {ticketNumberFor(eventId)}
-          </p>
-          <p className="font-mono text-sm font-bold tracking-[0.1em] text-paper-ink truncate">
-            {code}
-          </p>
+      {/* Tudo que identifica o bilhete — código, número e anfitrião —
+          fica dentro do canhoto de papel, não solto no corpo escuro
+          do card; o QR ocupa a lateral inteira, como um código de
+          barras de verdade. */}
+      <div className="ticket-stub flex items-stretch gap-3">
+        <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+          <div>
+            <p className="font-mono text-[9px] font-bold tracking-[0.18em] text-quorum-600">
+              CÓDIGO DO EVENTO
+            </p>
+            <p className="font-mono text-lg font-bold tracking-[0.06em] text-paper-ink truncate">
+              {code}
+            </p>
+          </div>
+
+          <div className="h-px bg-paper-ink/15 my-2" />
+
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar fotoUrl={organizerPhotoUrl} nome={organizerName} size={24} />
+            <div className="min-w-0 leading-tight">
+              <p className="text-[10px] text-paper-ink/60">organizado por</p>
+              <p className="text-[12px] font-bold text-paper-ink truncate">
+                {organizerName ?? "..."}
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="shrink-0 bg-white p-1 rounded-md">
-          <QRCodeSVG value={shareUrl} size={34} bgColor="#ffffff" fgColor="#2A2013" />
+
+        <div className="shrink-0 flex flex-col items-center justify-center gap-1">
+          <div className="bg-white p-1.5 rounded-md">
+            <QRCodeSVG value={shareUrl} size={54} bgColor="#ffffff" fgColor="#2A2013" />
+          </div>
+          <p className="font-mono text-[8px] tracking-[0.15em] text-paper-ink/45">
+            Nº {ticketNumberFor(eventId)}
+          </p>
         </div>
       </div>
       <div className="ticket-stub-perf" />
