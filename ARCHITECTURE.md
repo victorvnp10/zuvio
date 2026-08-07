@@ -445,3 +445,31 @@ Cada foto agora é um mini-post: avatar de quem postou, curtidas,
 comentários expansíveis com um campo pra escrever — mesmo padrão de
 interação do Instagram, restrito pela mesma regra de visibilidade
 (`evento` vs `pública`) que já existia.
+
+## Busca de amigos por nome/e-mail + ranqueamento por proximidade + sugestões
+
+Um único campo busca por nome (parcial) OU e-mail (**exato**, nunca
+parcial — comparação de igualdade, pra não virar um jeito de varrer
+todos os e-mails do sistema digitando poucas letras). `profiles.email`
+é uma coluna nova, mas com `GRANT SELECT` revogado pra
+`authenticated`/`anon` na hora (mesmo padrão já usado pra
+`data_nascimento`) — só as funções `security definer`
+`search_profiles_ranked`/`suggest_friends` conseguem ler, e nenhuma das
+duas devolve o e-mail no resultado, só usa como critério de
+correspondência.
+
+Ranqueamento (as duas funções): amigos em comum (contado via uma CTE
+`my_friends` + subquery correlacionada) → mesma `localizacao_base`
+(comparação de texto simples, já que perfis não têm geolocalização,
+só eventos) → mais recente. `suggest_friends` roda a mesma lógica sem
+precisar de texto de busca, excluindo quem já é amigo ou já tem pedido
+pendente em qualquer direção — é isso que a aba Amigos mostra
+automaticamente, sem precisar buscar nada.
+
+Novo tipo de domínio `RankedProfile extends Profile` (+ `amigosEmComum`)
+e mapper `toRankedProfile` — os resultados de busca/sugestão nunca usam
+o `Profile` "cru", pra deixar claro que só essas duas RPCs preenchem
+esse campo.
+
+Foto de perfil (`Avatar`) agora aparece em toda a tela de Amigos —
+antes só o nome, mesmo já tendo o componente pronto de outras telas.

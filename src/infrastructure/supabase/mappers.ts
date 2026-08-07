@@ -3,6 +3,7 @@ import type {
   Database,
   EventParticipantAdminRow,
   PendingRegistrationRow,
+  RankedProfileRow,
 } from "./database.types";
 import type {
   ActivityCheckin,
@@ -23,6 +24,7 @@ import type {
   FriendGroup,
   PendingRegistration,
   Profile,
+  RankedProfile,
   Rating,
   SharedGroup,
   GroupMember,
@@ -69,6 +71,23 @@ export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   isAdmin: "is_admin" in row ? row.is_admin : false,
   pontosReputacao: row.pontos_reputacao,
   criadoEm: row.criado_em,
+});
+
+/** Resultado de `search_profiles_ranked`/`suggest_friends` — nunca traz e-mail. */
+export const toRankedProfile = (row: RankedProfileRow): RankedProfile => ({
+  id: row.id,
+  nome: row.nome,
+  fotoUrl: row.foto_url,
+  dataNascimento: null,
+  genero: row.genero,
+  localizacaoBase: row.localizacao_base,
+  categoriasInteresse: row.categorias_interesse,
+  scoreConfiabilidade: row.score_confiabilidade,
+  selo: row.selo,
+  isAdmin: false,
+  pontosReputacao: 0,
+  criadoEm: row.criado_em,
+  amigosEmComum: row.amigos_em_comum,
 });
 
 export const toTrophy = (row: TrophyRow): Trophy => ({

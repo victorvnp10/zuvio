@@ -88,6 +88,12 @@ export interface Profile {
   criadoEm: string;
 }
 
+/** Resultado de busca/sugestão de amizade — o perfil + quantos amigos em comum. */
+export interface RankedProfile extends Profile {
+  amigosEmComum: number;
+}
+
+
 /** Troféu do catálogo — o mesmo pra todo mundo, conquistado ou não. */
 export interface Trophy {
   id: string;

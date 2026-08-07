@@ -58,6 +58,20 @@ export interface CertificateEligibilityRow {
 }
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
 
+/** Formato devolvido por search_profiles_ranked / suggest_friends — nunca inclui e-mail. */
+export type RankedProfileRow = {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  localizacao_base: string | null;
+  genero: string | null;
+  categorias_interesse: string[];
+  score_confiabilidade: number;
+  selo: TrustBadgeRow;
+  criado_em: string;
+  amigos_em_comum: number;
+};
+
 /** Formato retornado por `checkin_event()` (ver migração 0030) — jsonb
  * com o compromisso atualizado + o que mudou na reputação. */
 export interface CheckinResultRow {
@@ -601,6 +615,14 @@ export interface Database {
       confirm_payment: {
         Args: { p_event_id: string };
         Returns: void;
+      };
+      search_profiles_ranked: {
+        Args: { p_query: string | null; p_limit?: number };
+        Returns: RankedProfileRow[];
+      };
+      suggest_friends: {
+        Args: { p_limit?: number };
+        Returns: RankedProfileRow[];
       };
       approve_commitment: {
         Args: { p_commitment_id: string };

@@ -1,8 +1,32 @@
 import { supabase } from "../client";
-import { toProfile, toFriendship, toFriendGroup } from "../mappers";
-import type { Friendship, FriendGroup, Profile } from "../../../domain/entities/types";
+import { toProfile, toRankedProfile, toFriendship, toFriendGroup } from "../mappers";
+import type { Friendship, FriendGroup, Profile, RankedProfile } from "../../../domain/entities/types";
 
 export const FriendsRepository = {
+  /**
+   * Busca por nome (parcial) OU e-mail (exato — nunca parcial, pra não
+   * virar um jeito de varrer e-mails do sistema), entre todos os
+   * cadastrados, já ranqueada por proximidade de rede de amigos, depois
+   * localização, depois recência (ver função `search_profiles_ranked`,
+   * migração 0043).
+   */
+  async searchProfilesRanked(query: string, limit = 30): Promise<RankedProfile[]> {
+    const { data, error } = await supabase.rpc("search_profiles_ranked", {
+      p_query: query,
+      p_limit: limit,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toRankedProfile);
+  },
+
+  /** Sugestões de amizade sem busca ativa — mesma lógica de proximidade, excluindo quem já é amigo ou já tem pedido pendente. */
+  async suggestFriends(limit = 10): Promise<RankedProfile[]> {
+    const { data, error } = await supabase.rpc("suggest_friends", { p_limit: limit });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toRankedProfile);
+  },
+
+  /** @deprecated use searchProfilesRanked — mantido só caso algo ainda chame o nome antigo. */
   async searchProfiles(query: string, excludeUserId: string): Promise<Profile[]> {
     const { data, error } = await supabase
       .from("public_profiles")

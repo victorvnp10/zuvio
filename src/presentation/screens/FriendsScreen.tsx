@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../layout/AppShell";
 import { useFriends } from "../../application/hooks/useFriends";
@@ -6,8 +6,9 @@ import { useGroups } from "../../application/hooks/useGroups";
 import { useAuth } from "../../application/context/AuthContext";
 import { FriendsRepository } from "../../infrastructure/supabase/repositories/FriendsRepository";
 import { FriendRow } from "../components/FriendRow";
+import { Avatar } from "../components/Avatar";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
-import type { Profile } from "../../domain/entities/types";
+import type { RankedProfile } from "../../domain/entities/types";
 import { Search, UserPlus, Plus, Trash2, Users } from "lucide-react";
 
 function PendingRequestRow({
@@ -26,7 +27,10 @@ function PendingRequestRow({
 
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-2xl p-4 flex items-center justify-between">
-      <p className="font-medium text-ink-100">{profile.nome}</p>
+      <div className="flex items-center gap-3">
+        <Avatar fotoUrl={profile.fotoUrl} nome={profile.nome} size={36} />
+        <p className="font-medium text-ink-100">{profile.nome}</p>
+      </div>
       <div className="flex gap-2">
         <button
           onClick={() => onAccept(friendshipId)}
@@ -47,7 +51,12 @@ function PendingRequestRow({
 
 function PendingSentName({ userId }: { userId: string }) {
   const { data: profile } = usePublicProfile(userId);
-  return <p className="text-sm text-ink-100">{profile?.nome ?? "..."}</p>;
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar fotoUrl={profile?.fotoUrl} nome={profile?.nome} size={36} />
+      <p className="text-sm text-ink-100">{profile?.nome ?? "..."}</p>
+    </div>
+  );
 }
 
 export function FriendsScreen() {
@@ -68,22 +77,34 @@ export function FriendsScreen() {
   const { groups: sharedGroups, isLoading: isLoadingGroups, createGroup } = useGroups();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Profile[]>([]);
+  const [searchResults, setSearchResults] = useState<RankedProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState<RankedProfile[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
   const [newGroupName, setNewGroupName] = useState("");
   const [newSharedGroupName, setNewSharedGroupName] = useState("");
   const [tab, setTab] = useState<"amigos" | "pedidos" | "grupos" | "marcadores">("amigos");
 
   const handleSearch = async () => {
-    if (!searchQuery.trim() || !user) return;
+    if (!searchQuery.trim()) return;
     setIsSearching(true);
     try {
-      const results = await FriendsRepository.searchProfiles(searchQuery, user.id);
+      const results = await FriendsRepository.searchProfilesRanked(searchQuery);
       setSearchResults(results);
     } finally {
       setIsSearching(false);
     }
   };
+
+  // Sugestões (mesma lógica de proximidade da busca) carregam assim que
+  // a aba Amigos abre — não precisa de busca ativa pra aparecer.
+  useEffect(() => {
+    if (tab !== "amigos") return;
+    setIsLoadingSuggestions(true);
+    FriendsRepository.suggestFriends(10)
+      .then(setSuggestions)
+      .finally(() => setIsLoadingSuggestions(false));
+  }, [tab]);
 
   const friendUserIds = friendships.map((f) =>
     f.requesterId === user?.id ? f.addresseeId : f.requesterId
@@ -114,9 +135,12 @@ export function FriendsScreen() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!e.target.value.trim()) setSearchResults([]);
+              }}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Buscar por nome..."
+              placeholder="Buscar por nome ou e-mail..."
               className="flex-1 bg-ink-800 border border-ink-700 rounded-xl px-3 py-2.5 text-sm text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
             />
             <button
@@ -138,7 +162,18 @@ export function FriendsScreen() {
                     key={profile.id}
                     className="bg-ink-800/60 border border-ink-700 rounded-2xl p-3 flex items-center justify-between"
                   >
-                    <p className="text-sm text-ink-100">{profile.nome}</p>
+                    <div className="flex items-center gap-3">
+                      <Avatar fotoUrl={profile.fotoUrl} nome={profile.nome} size={36} />
+                      <div>
+                        <p className="text-sm text-ink-100">{profile.nome}</p>
+                        {profile.amigosEmComum > 0 && (
+                          <p className="text-xs text-ink-500">
+                            {profile.amigosEmComum} amigo{profile.amigosEmComum === 1 ? "" : "s"} em
+                            comum
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     {alreadyFriend ? (
                       <span className="text-xs text-quorum-500">Já é amigo</span>
                     ) : alreadySent ? (
@@ -154,6 +189,49 @@ export function FriendsScreen() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {searchQuery.trim() === "" && (
+            <div>
+              <h2 className="text-sm font-semibold text-ink-400 uppercase tracking-wide pt-2 pb-2">
+                Sugestões pra você
+              </h2>
+              {isLoadingSuggestions && <p className="text-sm text-ink-500">Carregando...</p>}
+              {!isLoadingSuggestions && suggestions.length === 0 && (
+                <p className="text-sm text-ink-500">
+                  Nenhuma sugestão por aqui ainda — adicione alguns amigos pra melhorar isso.
+                </p>
+              )}
+              <div className="space-y-2">
+                {suggestions.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="bg-ink-800/60 border border-ink-700 rounded-2xl p-3 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar fotoUrl={profile.fotoUrl} nome={profile.nome} size={36} />
+                      <div>
+                        <p className="text-sm text-ink-100">{profile.nome}</p>
+                        <p className="text-xs text-ink-500">
+                          {profile.amigosEmComum > 0
+                            ? `${profile.amigosEmComum} amigo${profile.amigosEmComum === 1 ? "" : "s"} em comum`
+                            : profile.localizacaoBase || "Sugestão"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await sendRequest(profile.id);
+                        setSuggestions((prev) => prev.filter((p) => p.id !== profile.id));
+                      }}
+                      className="flex items-center gap-1 text-xs font-semibold text-coral-500"
+                    >
+                      <UserPlus size={14} /> Adicionar
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

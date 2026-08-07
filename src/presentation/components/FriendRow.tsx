@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePublicProfile } from "../../application/hooks/usePublicProfile";
 import type { FriendGroup } from "../../domain/entities/types";
 import { useFriendGroupMembers } from "../../application/hooks/useFriendGroupMembers";
+import { Avatar } from "./Avatar";
 import { Users, X } from "lucide-react";
 
 function GroupToggle({ group, friendUserId }: { group: FriendGroup; friendUserId: string }) {
@@ -41,9 +42,12 @@ export function FriendRow({
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-2xl p-4 space-y-2">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="font-medium text-ink-100">{profile.nome}</p>
-          <p className="text-xs text-ink-500">{profile.localizacaoBase}</p>
+        <div className="flex items-center gap-3">
+          <Avatar fotoUrl={profile.fotoUrl} nome={profile.nome} size={40} />
+          <div>
+            <p className="font-medium text-ink-100">{profile.nome}</p>
+            <p className="text-xs text-ink-500">{profile.localizacaoBase}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
