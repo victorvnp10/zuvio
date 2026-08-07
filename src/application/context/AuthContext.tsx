@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../../infrastructure/supabase/client";
 import { ProfileRepository } from "../../infrastructure/supabase/repositories/ProfileRepository";
+import { GoogleCalendarRepository } from "../../infrastructure/supabase/repositories/GoogleCalendarRepository";
 import type { Profile } from "../../domain/entities/types";
 
 interface AuthContextValue {
@@ -11,6 +12,7 @@ interface AuthContextValue {
   loading: boolean;
   signUp: (input: SignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -32,8 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const p = await ProfileRepository.getOwn(userId);
+  const loadProfile = useCallback(async () => {
+    const p = await ProfileRepository.getOwn();
     setProfile(p);
   }, []);
 
@@ -45,17 +47,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        loadProfile(data.session.user.id).finally(() => setLoading(false));
+        loadProfile().finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+
       if (newSession?.user) {
-        loadProfile(newSession.user.id);
+        loadProfile();
+
+        // Logo após um login OAuth (Google), a sessão traz o token do
+        // provedor por uma única vez — é a única chance de capturá-lo
+        // e guardar com segurança (via Edge Function) para a
+        // sincronização com o Google Calendar funcionar depois.
+        // `app_metadata.provider` reflete o método ORIGINAL de cadastro
+        // da conta (ex.: "email", se a pessoa se cadastrou por e-mail e
+        // só depois vinculou o Google) — não é confiável para saber se
+        // ESTA sessão veio de um login OAuth. `provider_token` já é
+        // esse sinal por si só: só existe logo após um login OAuth,
+        // não importa qual foi o provedor original da conta.
+        if (event === "SIGNED_IN" && newSession.provider_token) {
+          GoogleCalendarRepository.storeTokens(
+            newSession.provider_token,
+            newSession.provider_refresh_token ?? undefined,
+            3500 // token do Google expira em ~3600s; margem de segurança
+          ).catch((err) => {
+            console.error("Não foi possível salvar o token do Google Calendar:", err);
+          });
+        }
       } else {
         setProfile(null);
       }
@@ -93,17 +116,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error(error.message);
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        // Escopo extra para poder criar eventos na Agenda de quem
+        // confirmar presença — sem isso, só teríamos login, sem
+        // permissão de escrever na agenda da pessoa.
+        scopes: "https://www.googleapis.com/auth/calendar.events",
+        queryParams: {
+          // access_type=offline + prompt=consent são o que garante que
+          // o Google devolva um refresh_token (sem isso, só vem o
+          // access_token, que expira em ~1h e não pode ser renovado).
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await loadProfile(user.id);
+    if (user) await loadProfile();
   }, [user, loadProfile]);
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        signOut,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -8,7 +8,6 @@
  * um projeto Supabase já provisionado.
  */
 
-export type EventCategoryRow = "esporte" | "viagem" | "hobby" | "encontro" | "estudo" | "outro";
 export type EventModalityRow = "estranhos" | "amigos" | "hibrida" | "restrita";
 export type EventStatusRow =
   | "aberto"
@@ -16,8 +15,92 @@ export type EventStatusRow =
   | "fechado"
   | "concluido"
   | "cancelado";
-export type CommitmentStatusRow = "confirmado" | "check-in" | "no-show" | "cancelado";
+export type CommitmentStatusRow =
+  | "confirmado"
+  | "check-in"
+  | "no-show"
+  | "cancelado"
+  | "pendente"
+  | "rejeitado";
+
+/** Linha de `list_pending_registrations()` (migração 0038) — a única
+ * função do app que expõe e-mail (`auth.users.email`), restrita ao
+ * organizador do próprio evento. */
+export interface PendingRegistrationRow {
+  commitment_id: string;
+  user_id: string;
+  nome: string;
+  foto_url: string | null;
+  email: string;
+  criado_em: string;
+}
+
+/** Linha de `list_event_participants()` (migração 0041) — roster
+ * completo (qualquer status), mesma restrição de acesso de
+ * `list_pending_registrations`. */
+export interface EventParticipantAdminRow {
+  commitment_id: string;
+  user_id: string;
+  nome: string;
+  foto_url: string | null;
+  email: string;
+  status: CommitmentStatusRow;
+  confirmado_em: string;
+  checkin_em: string | null;
+}
+
+/** Linha de `get_certificate_eligibility()` (migração 0042). */
+export interface CertificateEligibilityRow {
+  user_id: string;
+  nome: string;
+  percentual: number;
+  elegivel: boolean;
+}
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
+
+/** Formato devolvido por search_profiles_ranked / suggest_friends — nunca inclui e-mail. */
+export type RankedProfileRow = {
+  id: string;
+  nome: string;
+  foto_url: string | null;
+  localizacao_base: string | null;
+  genero: string | null;
+  categorias_interesse: string[];
+  score_confiabilidade: number;
+  selo: TrustBadgeRow;
+  criado_em: string;
+  amigos_em_comum: number;
+};
+
+/** Formato retornado por `checkin_event()` (ver migração 0030) — jsonb
+ * com o compromisso atualizado + o que mudou na reputação. */
+export interface CheckinResultRow {
+  commitment: Database["public"]["Tables"]["commitments"]["Row"];
+  pontos_ganhos: number;
+  pontos_totais: number;
+  trofeus_novos: { id: string; nome: string; emoji: string; descricao: string }[];
+}
+
+/** Formato retornado por `admin_get_dashboard_stats()` (ver migração 0028). */
+export interface AdminDashboardStats {
+  usuariosTotais: number;
+  novosUsuarios7d: number;
+  usuariosAtivos24h: number;
+  usuariosAtivos7d: number;
+  usuariosAtivos30d: number;
+  sessoes30d: number;
+  tempoMedioSessaoMin: number;
+  taxaSessaoUnicoEvento30d: number;
+  eventosPropostasTotal: number;
+  eventosPropostas7d: number;
+  compromissosConfirmadosTotal: number;
+  checkinsTotal: number;
+  taxaCheckin: number;
+  mensagensChatTotal: number;
+  fotosPostadasTotal: number;
+  pageViewsPorDia: { dia: string; contagem: number }[];
+  topPaginas7d: { path: string; contagem: number }[];
+}
 
 export interface Database {
   public: {
@@ -27,13 +110,14 @@ export interface Database {
           id: string;
           nome: string;
           foto_url: string | null;
-          data_nascimento: string;
+          data_nascimento: string | null;
           genero: string | null;
-          localizacao_base: string;
-          categorias_interesse: EventCategoryRow[];
+          localizacao_base: string | null;
+          categorias_interesse: string[];
           score_confiabilidade: number;
           selo: TrustBadgeRow;
           is_admin: boolean;
+          pontos_reputacao: number;
           criado_em: string;
         };
         Insert: Partial<Database["public"]["Tables"]["profiles"]["Row"]> & { id: string };
@@ -49,10 +133,12 @@ export interface Database {
         Row: {
           id: string;
           criador_id: string;
-          categoria: EventCategoryRow;
+          categoria: string;
           titulo: string;
           descricao: string;
           data_hora: string;
+          /** Só preenchida para tipo_evento = 'conferencia'. */
+          data_hora_fim: string | null;
           endereco: string;
           geo_lat: number | null;
           geo_lng: number | null;
@@ -62,16 +148,31 @@ export interface Database {
           quorum_minimo: number;
           status: EventStatusRow;
           criado_em: string;
+          tipo_evento: "livre" | "pago" | "colaborativo" | "conferencia";
+          valor_entrada: number | null;
+          link_pagamento: string | null;
+          modo_lista_colaborativa: "predefinida" | "livre" | "mista" | null;
+          modo_custo_colaborativo: "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes" | null;
+          valor_por_pessoa: number | null;
+          valor_total_rateio: number | null;
+          capa_url: string | null;
+          fotos_publicas: boolean;
+          /** Ver migração 0038 — quando true, `commit_to_event` insere
+           * como 'pendente' em vez de 'confirmado', até o organizador
+           * aprovar (`approve_commitment`) ou rejeitar
+           * (`reject_commitment`). */
+          exige_aprovacao: boolean;
+          /** Ver migração 0042 — percentual mínimo de presença pra
+           * elegibilidade de certificado; `null` = ainda não
+           * configurado (equivale a 100% em `get_certificate_eligibility`). */
+          certificado_presenca_minima: number | null;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],
           "id" | "vagas_confirmadas" | "status" | "criado_em"
         >;
         Update: Partial<
-          Pick<
-            Database["public"]["Tables"]["events"]["Row"],
-            "titulo" | "descricao" | "endereco" | "geo_lat" | "geo_lng" | "data_hora"
-          >
+          Omit<Database["public"]["Tables"]["events"]["Row"], "id" | "criado_em" | "criador_id">
         >;
       };
       commitments: {
@@ -82,6 +183,61 @@ export interface Database {
           status: CommitmentStatusRow;
           confirmado_em: string;
           checkin_em: string | null;
+          pagamento_confirmado: boolean;
+          google_calendar_event_id: string | null;
+        };
+      };
+      collaborative_items: {
+        Row: {
+          id: string;
+          event_id: string;
+          nome: string;
+          criado_por: string;
+          reservado_por: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          nome: string;
+          criado_por: string;
+        };
+      };
+      event_photos: {
+        Row: {
+          id: string;
+          event_id: string;
+          autor_id: string;
+          foto_url: string;
+          visibilidade: "evento" | "publica";
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          autor_id: string;
+          foto_url: string;
+          visibilidade: "evento" | "publica";
+        };
+      };
+      event_likes: {
+        Row: { event_id: string; user_id: string; criado_em: string };
+        Insert: { event_id: string; user_id: string };
+      };
+      event_photo_likes: {
+        Row: { photo_id: string; user_id: string; criado_em: string };
+        Insert: { photo_id: string; user_id: string };
+      };
+      event_photo_comments: {
+        Row: {
+          id: string;
+          photo_id: string;
+          autor_id: string;
+          texto: string;
+          criado_em: string;
+        };
+        Insert: {
+          photo_id: string;
+          autor_id: string;
+          texto: string;
         };
       };
       chat_messages: {
@@ -132,6 +288,7 @@ export interface Database {
           criado_por: string;
           uso: "unico" | "multiplo";
           expira_em: string | null;
+          usado_por?: string[];
         };
       };
       reports: {
@@ -163,8 +320,254 @@ export interface Database {
           blocked_id: string;
         };
       };
+      friendships: {
+        Row: {
+          id: string;
+          requester_id: string;
+          addressee_id: string;
+          status: "pendente" | "aceito";
+          criado_em: string;
+          respondido_em: string | null;
+        };
+        Insert: {
+          requester_id: string;
+          addressee_id: string;
+        };
+      };
+      friend_groups: {
+        Row: {
+          id: string;
+          owner_id: string;
+          nome: string;
+          is_system: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          owner_id: string;
+          nome: string;
+          is_system: boolean;
+        };
+      };
+      friend_group_members: {
+        Row: {
+          group_id: string;
+          friend_user_id: string;
+          criado_em: string;
+        };
+        Insert: {
+          group_id: string;
+          friend_user_id: string;
+        };
+      };
+      groups: {
+        Row: {
+          id: string;
+          criador_id: string;
+          nome: string;
+          descricao: string | null;
+          foto_url: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          criador_id: string;
+          nome: string;
+          descricao?: string | null;
+          foto_url?: string | null;
+        };
+      };
+      group_members: {
+        Row: {
+          group_id: string;
+          user_id: string;
+          papel: "admin" | "membro";
+          entrou_em: string;
+        };
+        Insert: {
+          group_id: string;
+          user_id: string;
+          papel?: "admin" | "membro";
+        };
+      };
+      group_invites: {
+        Row: {
+          id: string;
+          group_id: string;
+          criado_por: string;
+          codigo: string;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          group_id: string;
+          criado_por: string;
+          ativo?: boolean;
+        };
+      };
+      event_announcements: {
+        Row: {
+          id: string;
+          event_id: string;
+          autor_id: string;
+          texto: string;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          autor_id: string;
+          texto: string;
+        };
+      };
+      categories: {
+        Row: {
+          id: string;
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem: number;
+          ativo: boolean;
+          criado_em: string;
+        };
+        Insert: {
+          id: string;
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem?: number;
+          ativo?: boolean;
+        };
+        Update: Partial<{
+          nome: string;
+          emoji: string;
+          cor: string;
+          ordem: number;
+          ativo: boolean;
+        }>;
+      };
+      conference_activities: {
+        Row: {
+          id: string;
+          event_id: string;
+          titulo: string;
+          descricao: string;
+          local: string;
+          geo_lat: number | null;
+          geo_lng: number | null;
+          capa_url: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem: number;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          titulo: string;
+          descricao?: string;
+          local: string;
+          geo_lat?: number | null;
+          geo_lng?: number | null;
+          capa_url?: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem?: number;
+        };
+        Update: Partial<{
+          titulo: string;
+          descricao: string;
+          local: string;
+          geo_lat: number | null;
+          geo_lng: number | null;
+          capa_url: string | null;
+          data_hora_inicio: string;
+          data_hora_fim: string;
+          ordem: number;
+        }>;
+      };
+      activity_checkins: {
+        Row: {
+          id: string;
+          activity_id: string;
+          user_id: string;
+          checkin_em: string;
+        };
+      };
+      activity_ratings: {
+        Row: {
+          id: string;
+          activity_id: string;
+          user_id: string;
+          nota: number;
+          comentario: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          activity_id: string;
+          user_id: string;
+          nota: number;
+          comentario?: string | null;
+        };
+        Update: Partial<{ nota: number; comentario: string | null }>;
+      };
+      event_ratings: {
+        Row: {
+          id: string;
+          event_id: string;
+          user_id: string;
+          nota: number;
+          comentario: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          user_id: string;
+          nota: number;
+          comentario?: string | null;
+        };
+        Update: Partial<{ nota: number; comentario: string | null }>;
+      };
+      trophies: {
+        Row: {
+          id: string;
+          nome: string;
+          descricao: string;
+          emoji: string;
+          criterio_tipo: "checkins" | "pontos" | "selo_ouro";
+          criterio_valor: number | null;
+          ordem: number;
+        };
+      };
+      profile_trophies: {
+        Row: {
+          profile_id: string;
+          trophy_id: string;
+          conquistado_em: string;
+        };
+      };
+      analytics_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          session_id: string;
+          tipo: "session_start" | "page_view" | "heartbeat";
+          path: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          user_id: string | null;
+          session_id: string;
+          tipo: "session_start" | "page_view" | "heartbeat";
+          path?: string | null;
+        };
+      };
     };
     Functions: {
+      get_own_profile: {
+        Args: Record<string, never>;
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
+      };
+      admin_get_dashboard_stats: {
+        Args: Record<string, never>;
+        Returns: AdminDashboardStats;
+      };
       commit_to_event: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Tables"]["commitments"]["Row"];
@@ -174,10 +577,70 @@ export interface Database {
         Returns: void;
       };
       checkin_event: {
-        Args: { p_event_id: string; p_lat: number; p_lng: number };
-        Returns: Database["public"]["Tables"]["commitments"]["Row"];
+        Args: { p_event_id: string; p_lat: number | null; p_lng: number | null };
+        Returns: CheckinResultRow;
+      };
+      conclude_past_events: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+      checkin_activity: {
+        Args: { p_activity_id: string; p_lat: number | null; p_lng: number | null };
+        Returns: Database["public"]["Tables"]["activity_checkins"]["Row"];
+      };
+      get_activity_rating_summary: {
+        Args: { p_activity_id: string };
+        Returns: { media: number | null; total: number };
+      };
+      get_event_rating_summary: {
+        Args: { p_event_id: string };
+        Returns: { media: number | null; total: number };
+      };
+      admin_checkin: {
+        Args: { p_event_id: string; p_user_id: string };
+        Returns: CheckinResultRow;
+      };
+      list_event_participants: {
+        Args: { p_event_id: string };
+        Returns: EventParticipantAdminRow[];
+      };
+      get_certificate_eligibility: {
+        Args: { p_event_id: string };
+        Returns: CertificateEligibilityRow[];
       };
       redeem_invite: {
+        Args: { p_codigo: string };
+        Returns: string;
+      };
+      confirm_payment: {
+        Args: { p_event_id: string };
+        Returns: void;
+      };
+      search_profiles_ranked: {
+        Args: { p_query: string | null; p_limit?: number };
+        Returns: RankedProfileRow[];
+      };
+      suggest_friends: {
+        Args: { p_limit?: number };
+        Returns: RankedProfileRow[];
+      };
+      approve_commitment: {
+        Args: { p_commitment_id: string };
+        Returns: Database["public"]["Tables"]["commitments"]["Row"];
+      };
+      reject_commitment: {
+        Args: { p_commitment_id: string };
+        Returns: void;
+      };
+      list_pending_registrations: {
+        Args: { p_event_id: string };
+        Returns: PendingRegistrationRow[];
+      };
+      create_group: {
+        Args: { p_nome: string; p_descricao?: string | null };
+        Returns: Database["public"]["Tables"]["groups"]["Row"];
+      };
+      redeem_group_invite: {
         Args: { p_codigo: string };
         Returns: string;
       };

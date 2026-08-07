@@ -18,10 +18,16 @@ serviços (Supabase, GitHub, Vercel).
    região mais perto de onde seus usuários estarão.
 3. Espere o projeto provisionar (1-2 minutos).
 4. No menu lateral, abra o **SQL Editor** → **New query**.
-5. Abra o arquivo `supabase/migrations/0001_initial_schema.sql` deste
-   repositório, copie o conteúdo inteiro, cole no editor e clique em
-   **Run**. Isso cria todas as tabelas, as políticas de segurança (RLS)
-   e as funções do backend (confirmação de presença, check-in, etc.).
+5. Rode, **em ordem**, todos os arquivos de `supabase/migrations/`:
+   `0001_initial_schema.sql`, `0002_fix_commitments_rls_recursion.sql`,
+   `0003_fix_events_commitments_rls_recursion.sql`,
+   `0004_editable_vagas_quorum.sql`, `0005_friends_system.sql`,
+   `0006_event_types_and_collaborative_list.sql`,
+   `0007_google_calendar_integration.sql`,
+   `0008_google_signup_support.sql`. Para cada um: copie o conteúdo,
+   cole no editor e clique em **Run** — espere "Success" antes de ir
+   para o próximo. Isso cria todas as tabelas, as políticas de
+   segurança (RLS), o sistema de amigos e as funções do backend.
    - Se der erro de "relation already exists" (rodou duas vezes sem
      limpar), rode antes: `drop schema public cascade; create schema public;`
      — só faça isso se ainda não tiver dados de teste que importam.
@@ -132,6 +138,71 @@ push.
 
 ---
 
+## Passo 5 — Login com Google + sincronização com a Agenda (opcional)
+
+Essa parte precisa de configuração fora do código, no Google Cloud e
+no Supabase. Sem ela, o app funciona normalmente com e-mail/senha —
+é só o botão "Continuar com Google" que fica sem efeito.
+
+### 5.1 — Criar as credenciais OAuth no Google Cloud
+
+1. Acesse o [Google Cloud Console](https://console.cloud.google.com/) → crie um projeto (ou use um existente).
+2. **APIs e serviços → Tela de consentimento OAuth**: configure como
+   "Externo", preencha nome do app, e-mail de suporte. Não precisa
+   submeter para verificação enquanto estiver testando com poucos
+   usuários (modo "Testing").
+3. **APIs e serviços → Biblioteca**: busque e ative a **Google Calendar API**.
+4. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**:
+   - Tipo de aplicativo: **Aplicativo Web**.
+   - **Origens JavaScript autorizadas**: a URL do seu app na Vercel
+     (e `http://localhost:5173` para testar local).
+   - **URIs de redirecionamento autorizados**: a URL de callback do
+     Supabase — algo como
+     `https://SEU_PROJETO.supabase.co/auth/v1/callback`
+     (o Supabase mostra essa URL exata na tela do próximo passo).
+5. Copie o **Client ID** e o **Client Secret** gerados.
+
+### 5.2 — Conectar o Google como provedor no Supabase
+
+1. No painel do Supabase: **Authentication → Providers → Google**.
+2. Ative, cole o **Client ID** e **Client Secret** do passo anterior.
+3. Copie a **Callback URL** mostrada ali e confirme que é a mesma que
+   você colocou no Google Cloud no passo 5.1.
+
+### 5.3 — Deploy da Edge Function (sincronização com a Agenda)
+
+A troca seria do token do Google (necessária para acessar a agenda
+depois que o access_token expira) exige o Client Secret — por isso
+roda numa Edge Function, nunca no navegador. Com a
+[Supabase CLI](https://supabase.com/docs/guides/cli) instalada:
+
+```bash
+supabase login
+supabase link --project-ref SEU_PROJECT_ID
+supabase functions deploy sync-google-calendar
+
+# Segredos da função (nunca vão para o código do cliente):
+supabase secrets set GOOGLE_CLIENT_ID=seu_client_id
+supabase secrets set GOOGLE_CLIENT_SECRET=seu_client_secret
+```
+
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` já ficam disponíveis
+automaticamente em toda Edge Function do projeto — não precisa
+configurar esses dois.
+
+### O que acontece depois de configurado
+
+- No login com Google, o app pede também permissão de escrever na
+  Agenda (`calendar.events`) — a pessoa vê essa permissão na tela de
+  consentimento do próprio Google.
+- Sempre que alguém confirma presença num evento, o app tenta criar
+  um evento correspondente na Agenda do Google dela automaticamente
+  (best-effort — se falhar, não impede a confirmação de presença).
+- Ao cancelar a presença, o evento correspondente é removido da
+  Agenda.
+
+---
+
 ## Arquitetura
 
 Veja [`ARCHITECTURE.md`](./ARCHITECTURE.md) para a organização em
@@ -143,6 +214,7 @@ para as próximas fases.
 - React 18 + Vite + TypeScript
 - Tailwind CSS v4 (config CSS-first, ver `src/index.css`)
 - Supabase (Postgres + Auth + Realtime + RLS) — sem backend customizado
+- Edge Function (Deno) para a integração com o Google Calendar
 - React Router + TanStack Query
 - PWA via `vite-plugin-pwa`
 - Deploy: Vercel

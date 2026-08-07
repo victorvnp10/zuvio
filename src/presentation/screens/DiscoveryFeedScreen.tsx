@@ -1,98 +1,163 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { AppShell } from "../layout/AppShell";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useDiscoveryFeed } from "../../application/hooks/useDiscoveryFeed";
-import { summarizeQuorum } from "../../domain/services/QuorumService";
-import { QuorumBar } from "../components/QuorumMeter";
-import { CategoryBadge, CATEGORY_OPTIONS } from "../components/CategoryBadge";
-import type { EventCategory } from "../../domain/entities/types";
-import { MapPin, CalendarDays } from "lucide-react";
+import { useQuickCommit } from "../../application/hooks/useQuickCommit";
+import { useAuth } from "../../application/context/AuthContext";
+import { CommitmentsRepository } from "../../infrastructure/supabase/repositories/CommitmentsRepository";
+import { EventLikesRepository } from "../../infrastructure/supabase/repositories/EventLikesRepository";
+import { EventPhotosRepository } from "../../infrastructure/supabase/repositories/EventPhotosRepository";
+import { EventPostCard } from "../components/EventPostCard";
+import { categoryGradientStyle } from "../components/CategoryBadge";
+import { useCategories } from "../../application/hooks/useCategories";
+import { BottomNav } from "../layout/BottomNav";
+import type { Commitment, EventCategory } from "../../domain/entities/types";
 
 export function DiscoveryFeedScreen() {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [categoria, setCategoria] = useState<EventCategory | undefined>(undefined);
   const { data: events, isLoading } = useDiscoveryFeed(categoria);
+  const { data: categories } = useCategories();
+  const { commit, cancel, pendingEventId, error } = useQuickCommit();
+
+  const eventIds = useMemo(() => events?.map((e) => e.id) ?? [], [events]);
+
+  const { data: allParticipants } = useQuery({
+    queryKey: ["feed-participants", eventIds],
+    queryFn: () => CommitmentsRepository.listForEvents(eventIds),
+    enabled: eventIds.length > 0,
+  });
+
+  const { data: allLikes } = useQuery({
+    queryKey: ["feed-likes", eventIds],
+    queryFn: () => EventLikesRepository.listForEvents(eventIds),
+    enabled: eventIds.length > 0,
+  });
+
+  // Só entram no carrossel "reels" da capa os eventos com
+  // `fotosPublicas` (o organizador decidiu abrir pra todo mundo) — a
+  // RLS já filtra sozinha, mas evitamos a query à toa pros demais.
+  const publicPhotoEventIds = useMemo(
+    () => (events ?? []).filter((e) => e.fotosPublicas).map((e) => e.id),
+    [events]
+  );
+
+  const { data: photosByEvent } = useQuery({
+    queryKey: ["feed-public-photos", publicPhotoEventIds],
+    queryFn: () => EventPhotosRepository.listForEvents(publicPhotoEventIds),
+    enabled: publicPhotoEventIds.length > 0,
+  });
+
+  const { data: myCommitments } = useQuery({
+    queryKey: ["my-commitments", user?.id],
+    queryFn: () => CommitmentsRepository.listMine(user!.id),
+    enabled: Boolean(user),
+  });
+
+  const participantsByEvent = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of allParticipants ?? []) {
+      map.set(c.eventId, [...(map.get(c.eventId) ?? []), c.userId]);
+    }
+    return map;
+  }, [allParticipants]);
+
+  const likesByEvent = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const l of allLikes ?? []) {
+      map.set(l.eventId, [...(map.get(l.eventId) ?? []), l.userId]);
+    }
+    return map;
+  }, [allLikes]);
+
+  const myCommitmentByEvent = useMemo(() => {
+    const map = new Map<string, { id: string; status: Commitment["status"] }>();
+    for (const c of myCommitments ?? []) {
+      if (c.status !== "cancelado") map.set(c.eventId, { id: c.id, status: c.status });
+    }
+    return map;
+  }, [myCommitments]);
 
   return (
-    <AppShell title="Descobrir">
-      <div className="flex gap-2 overflow-x-auto pb-3 -mx-1 px-1">
+    <div className="min-h-screen bg-ink-900 text-ink-100 pb-16">
+      <header className="sticky top-0 z-20 bg-ink-900/90 backdrop-blur-md border-b border-ink-800 px-4 py-3">
+        <h1 className="font-display font-bold text-2xl tracking-tight">
+          Zuv<span className="text-coral-500">i</span>o
+        </h1>
+      </header>
+
+      {/* Categorias em formato de "stories" */}
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide px-4 py-3 border-b border-ink-800">
         <button
           onClick={() => setCategoria(undefined)}
-          className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-            !categoria
-              ? "bg-coral-500 border-coral-500 text-ink-950"
-              : "bg-transparent border-ink-700 text-ink-300"
-          }`}
+          className="flex flex-col items-center gap-1 shrink-0"
         >
-          Todas
-        </button>
-        {CATEGORY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setCategoria(opt.value)}
-            className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-              categoria === opt.value
-                ? "bg-coral-500 border-coral-500 text-ink-950"
-                : "bg-transparent border-ink-700 text-ink-300"
+          <span
+            className={`w-14 h-14 rounded-full flex items-center justify-center text-xl bg-ink-800 ${
+              !categoria ? "ring-2 ring-coral-500 ring-offset-2 ring-offset-ink-900" : ""
             }`}
           >
-            {opt.label}
-          </button>
-        ))}
+            ✨
+          </span>
+          <span className="text-[11px] text-ink-400">Todas</span>
+        </button>
+        {(categories ?? []).map((cat) => {
+          const isActive = categoria === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setCategoria(cat.id)}
+              className="flex flex-col items-center gap-1 shrink-0"
+            >
+              <span
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-xl ${
+                  isActive ? "ring-2 ring-coral-500 ring-offset-2 ring-offset-ink-900" : ""
+                }`}
+                style={categoryGradientStyle(cat.cor)}
+              >
+                {cat.emoji}
+              </span>
+              <span className="text-[11px] text-ink-400 truncate w-14 text-center">{cat.nome}</span>
+            </button>
+          );
+        })}
       </div>
 
       {isLoading && <p className="text-center text-ink-400 py-10">Carregando propostas...</p>}
 
       {!isLoading && (events?.length ?? 0) === 0 && (
-        <div className="text-center py-16 space-y-2">
+        <div className="text-center py-16 space-y-2 px-4">
           <p className="text-ink-200 font-medium">
             Nenhuma proposta por aqui ainda — que tal criar a primeira?
           </p>
-          <button
-            onClick={() => navigate("/criar")}
-            className="text-coral-500 font-semibold text-sm"
-          >
-            Criar proposta
-          </button>
         </div>
       )}
 
-      <div className="space-y-4 mt-2">
-        {events?.map((event) => {
-          const quorum = summarizeQuorum(event);
-          return (
-            <button
-              key={event.id}
-              onClick={() => navigate(`/eventos/${event.id}`)}
-              className="w-full text-left bg-ink-800/60 border border-ink-700 rounded-2xl p-4 space-y-3 hover:border-coral-500/40 transition-colors"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CategoryBadge categoria={event.categoria} />
-                  <h3 className="font-display font-semibold text-lg text-ink-100 mt-2">
-                    {event.titulo}
-                  </h3>
-                </div>
-              </div>
+      {error && <p className="text-sm text-red-400 text-center py-2">{error}</p>}
 
-              <div className="flex flex-col gap-1 text-sm text-ink-400">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays size={14} />
-                  {format(new Date(event.dataHora), "EEE, dd/MM 'às' HH:mm", { locale: ptBR })}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin size={14} />
-                  {event.local.endereco}
-                </span>
-              </div>
-
-              <QuorumBar quorum={quorum} />
-            </button>
-          );
-        })}
+      <div className="px-4 py-4 space-y-4">
+        {events?.map((event) => (
+          <EventPostCard
+            key={event.id}
+            event={event}
+            participantIds={participantsByEvent.get(event.id) ?? []}
+            likerIds={likesByEvent.get(event.id) ?? []}
+            photos={photosByEvent?.[event.id] ?? []}
+            currentUserId={user!.id}
+            isCommitted={
+              myCommitmentByEvent.get(event.id)?.status === "confirmado" ||
+              myCommitmentByEvent.get(event.id)?.status === "check-in"
+            }
+            isPendingApproval={myCommitmentByEvent.get(event.id)?.status === "pendente"}
+            isOwnEvent={event.criadorId === user?.id}
+            myCommitmentId={myCommitmentByEvent.get(event.id)?.id}
+            isPending={pendingEventId === event.id}
+            onQuickCommit={() => commit(event.id)}
+            onQuickCancel={() => cancel(event.id, myCommitmentByEvent.get(event.id)?.id)}
+          />
+        ))}
       </div>
-    </AppShell>
+
+      <BottomNav />
+    </div>
   );
 }
