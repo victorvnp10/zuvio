@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./application/context/AuthContext";
 import { useAnalyticsTracker } from "./application/hooks/useAnalyticsTracker";
 import { AuthScreen } from "./presentation/screens/AuthScreen";
@@ -20,6 +21,7 @@ import {
   PENDING_GROUP_INVITE_KEY,
 } from "./presentation/screens/GroupInviteRedeemScreen";
 import { isProfileComplete } from "./domain/valueObjects/Eligibility";
+import { saveIntendedPath, peekIntendedPath, consumeIntendedPath } from "./shared/authRedirect";
 
 /** Sem elemento próprio — só liga o rastreio de analytics enquanto o
  * resto do app renderiza normalmente (precisa estar dentro do
@@ -41,7 +43,13 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) return <Navigate to="/entrar" replace />;
+  if (!user) {
+    // Guarda pra onde a pessoa estava tentando ir (ex.: um link de
+    // evento compartilhado) — sem isso, depois de cadastrar/logar ela
+    // cai na tela inicial e perde o destino original.
+    saveIntendedPath(location.pathname, location.search);
+    return <Navigate to="/entrar" replace />;
+  }
 
   // Login com Google não fornece data de nascimento/localização — sem
   // isso, a pessoa é levada a completar o perfil antes de ver o resto
@@ -68,6 +76,25 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     return <Navigate to={`/grupos/convite/${pendingGroupInviteCode}`} replace />;
   }
 
+  // Destino genérico salvo antes do login (ex.: link direto de um
+  // evento compartilhado) — só redireciona se ainda não chegamos lá,
+  // pra não entrar em loop.
+  const intendedPath = peekIntendedPath();
+  if (intendedPath && location.pathname + location.search !== intendedPath) {
+    return <Navigate to={intendedPath} replace />;
+  }
+
+  return <ClearIntendedPathOnArrival>{children}</ClearIntendedPathOnArrival>;
+}
+
+/** Assim que a pessoa chega no destino que estava pendente, apaga a
+ * marca do sessionStorage — sem isso, ela ficaria lá até a aba fechar,
+ * podendo causar um redirect indesejado numa sessão futura (ex.: se a
+ * pessoa deslogar e logar de novo antes de fechar a aba). */
+function ClearIntendedPathOnArrival({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    consumeIntendedPath();
+  }, []);
   return <>{children}</>;
 }
 

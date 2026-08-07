@@ -473,3 +473,30 @@ esse campo.
 
 Foto de perfil (`Avatar`) agora aparece em toda a tela de Amigos —
 antes só o nome, mesmo já tendo o componente pronto de outras telas.
+
+## Correção: link compartilhado não funcionava pra quem não tinha conta
+
+Quem compartilhava um evento gerava um link direto (`/eventos/:id`), e
+quem abria esse link sem ter conta caía no cadastro — mas depois de
+cadastrar, era jogado na tela inicial, perdendo o evento que estava
+tentando ver. `RequireAuth` (`App.tsx`) só guardava o destino pendente
+pra fluxos de convite (`/convite/:codigo`, `/grupos/convite/:codigo`),
+não pra links diretos genéricos.
+
+Correção: `shared/authRedirect.ts` guarda qualquer destino protegido
+que a pessoa tentou acessar sem estar logada (`saveIntendedPath`), e
+`RequireAuth` redireciona pra lá depois do login/cadastro
+(`peekIntendedPath`), com uma limpeza automática do sessionStorage
+assim que a pessoa chega no destino (`ClearIntendedPathOnArrival`).
+Funciona tanto pro fluxo de e-mail/senha (que passa pelo `AuthScreen`)
+quanto pro login com Google (que não passa por lá — por isso a
+checagem central em `RequireAuth`, não no formulário).
+
+**Limitação conhecida**: isso resolve o caso geral (eventos públicos —
+"Aberta a estranhos"/"Híbrida"). Pra eventos modalidade **Restrita**,
+compartilhar o link direto do evento (`/eventos/:id`) continua não
+dando acesso a quem não tem convite — nesses casos, quem compartilha
+precisa usar o link de convite (`/convite/:codigo`), disponível hoje
+só para o organizador (`InviteLinkSection`, na página do evento). Dar
+esse mesmo link para qualquer participante compartilhar (não só o
+organizador) é uma extensão natural, ainda não implementada.

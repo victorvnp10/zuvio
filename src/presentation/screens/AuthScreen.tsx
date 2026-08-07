@@ -35,6 +35,11 @@ export function AuthScreen() {
         await signUp({ email, password, nome, dataNascimentoISO: dataNascimento, genero, localizacaoBase });
       }
       const pendingInviteCode = sessionStorage.getItem("zuvio:pending_invite_code");
+      // O `RequireAuth` (App.tsx) é quem decide de fato pra onde ir a
+      // partir daqui — ele lê o mesmo sessionStorage e também cobre o
+      // destino genérico (ex.: link de evento compartilhado). Aqui só
+      // precisamos sair da tela de login; navegar pro convite quando
+      // ele existir evita um "flash" na tela inicial antes do redirect.
       navigate(pendingInviteCode ? `/convite/${pendingInviteCode}` : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Algo deu errado. Tente de novo.");
