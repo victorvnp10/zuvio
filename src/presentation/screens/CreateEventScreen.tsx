@@ -72,6 +72,7 @@ export function CreateEventScreen() {
   const [geoStatus, setGeoStatus] = useState<"idle" | "capturing" | "done" | "error">("idle");
   const [vagasTotal, setVagasTotal] = useState(5);
   const [quorumMinimo, setQuorumMinimo] = useState(3);
+  const [exigeAprovacao, setExigeAprovacao] = useState(false);
 
   const [tipoEvento, setTipoEvento] = useState<TipoEvento>("livre");
   const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
@@ -108,6 +109,7 @@ export function CreateEventScreen() {
       modalidade,
       vagasTotal,
       quorumMinimo,
+      exigeAprovacao,
       tipoEvento,
       valorEntrada: temEntradaPaga ? valorEntrada : null,
       linkPagamento: temEntradaPaga ? linkPagamento : null,
@@ -364,6 +366,22 @@ export function CreateEventScreen() {
               novas confirmações continuam entrando até completar as vagas.
             </p>
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-ink-300 border-t border-ink-700 pt-4">
+            <input
+              type="checkbox"
+              checked={exigeAprovacao}
+              onChange={(e) => setExigeAprovacao(e.target.checked)}
+              className="accent-coral-500 mt-0.5"
+            />
+            <span>
+              Exigir aprovação de inscrições
+              <span className="block text-xs text-ink-500 mt-0.5">
+                Quem confirmar presença fica "aguardando aprovação" até você aceitar — só
+                depois disso a vaga é ocupada de verdade e a pessoa ganha acesso ao evento.
+              </span>
+            </span>
+          </label>
         </div>
       )}
 

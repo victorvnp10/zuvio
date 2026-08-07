@@ -1,4 +1,4 @@
-import type { Database } from "./database.types";
+import type { Database, PendingRegistrationRow } from "./database.types";
 import type {
   ActivityCheckin,
   ActivityRating,
@@ -13,6 +13,7 @@ import type {
   EventProposal,
   Friendship,
   FriendGroup,
+  PendingRegistration,
   Profile,
   Rating,
   SharedGroup,
@@ -113,6 +114,7 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   modoCustoColaborativo: row.modo_custo_colaborativo,
   valorPorPessoa: row.valor_por_pessoa,
   valorTotalRateio: row.valor_total_rateio,
+  exigeAprovacao: row.exige_aprovacao,
 });
 
 export const toConferenceActivity = (row: ConferenceActivityRow): ConferenceActivity => ({
@@ -154,6 +156,15 @@ export const toCommitment = (row: CommitmentRow): Commitment => ({
   checkinEm: row.checkin_em,
   pagamentoConfirmado: row.pagamento_confirmado,
   googleCalendarEventId: row.google_calendar_event_id,
+});
+
+export const toPendingRegistration = (row: PendingRegistrationRow): PendingRegistration => ({
+  commitmentId: row.commitment_id,
+  userId: row.user_id,
+  nome: row.nome,
+  fotoUrl: row.foto_url,
+  email: row.email,
+  criadoEm: row.criado_em,
 });
 
 export const toChatMessage = (row: ChatMessageRow): ChatMessage => ({

@@ -15,7 +15,25 @@ export type EventStatusRow =
   | "fechado"
   | "concluido"
   | "cancelado";
-export type CommitmentStatusRow = "confirmado" | "check-in" | "no-show" | "cancelado";
+export type CommitmentStatusRow =
+  | "confirmado"
+  | "check-in"
+  | "no-show"
+  | "cancelado"
+  | "pendente"
+  | "rejeitado";
+
+/** Linha de `list_pending_registrations()` (migração 0038) — a única
+ * função do app que expõe e-mail (`auth.users.email`), restrita ao
+ * organizador do próprio evento. */
+export interface PendingRegistrationRow {
+  commitment_id: string;
+  user_id: string;
+  nome: string;
+  foto_url: string | null;
+  email: string;
+  criado_em: string;
+}
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
 
 /** Formato retornado por `checkin_event()` (ver migração 0030) — jsonb
@@ -103,6 +121,11 @@ export interface Database {
           valor_total_rateio: number | null;
           capa_url: string | null;
           fotos_publicas: boolean;
+          /** Ver migração 0038 — quando true, `commit_to_event` insere
+           * como 'pendente' em vez de 'confirmado', até o organizador
+           * aprovar (`approve_commitment`) ou rejeitar
+           * (`reject_commitment`). */
+          exige_aprovacao: boolean;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],
@@ -519,6 +542,18 @@ export interface Database {
       confirm_payment: {
         Args: { p_event_id: string };
         Returns: void;
+      };
+      approve_commitment: {
+        Args: { p_commitment_id: string };
+        Returns: Database["public"]["Tables"]["commitments"]["Row"];
+      };
+      reject_commitment: {
+        Args: { p_commitment_id: string };
+        Returns: void;
+      };
+      list_pending_registrations: {
+        Args: { p_event_id: string };
+        Returns: PendingRegistrationRow[];
       };
       create_group: {
         Args: { p_nome: string; p_descricao?: string | null };

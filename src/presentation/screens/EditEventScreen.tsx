@@ -67,6 +67,7 @@ export function EditEventScreen() {
   const [modalidade, setModalidade] = useState<EventModality>("estranhos");
   const [vagasTotal, setVagasTotal] = useState(5);
   const [quorumMinimo, setQuorumMinimo] = useState(3);
+  const [exigeAprovacao, setExigeAprovacao] = useState(false);
 
   const [tipoEvento, setTipoEvento] = useState<TipoEvento>("livre");
   const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
@@ -91,6 +92,7 @@ export function EditEventScreen() {
       setModalidade(event.modalidade);
       setVagasTotal(event.vagasTotal);
       setQuorumMinimo(event.quorumMinimo);
+      setExigeAprovacao(event.exigeAprovacao);
       setTipoEvento(event.tipoEvento);
       setDataHoraFimConferencia(event.dataHoraFim ? toDatetimeLocalValue(event.dataHoraFim) : "");
       setValorEntrada(event.valorEntrada ?? 0);
@@ -157,6 +159,7 @@ export function EditEventScreen() {
       modalidade,
       vagasTotal,
       quorumMinimo,
+      exigeAprovacao,
       tipoEvento,
       valorEntrada: temEntradaPaga ? valorEntrada : null,
       linkPagamento: temEntradaPaga ? linkPagamento : null,
@@ -354,6 +357,22 @@ export function EditEventScreen() {
               na hora.
             </p>
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-ink-300">
+            <input
+              type="checkbox"
+              checked={exigeAprovacao}
+              onChange={(e) => setExigeAprovacao(e.target.checked)}
+              className="accent-coral-500 mt-0.5"
+            />
+            <span>
+              Exigir aprovação de inscrições
+              <span className="block text-xs text-ink-500 mt-0.5">
+                Quem confirmar presença fica "aguardando aprovação" até você aceitar — só
+                depois disso a vaga é ocupada de verdade e a pessoa ganha acesso ao evento.
+              </span>
+            </span>
+          </label>
 
           <div className="border-t border-ink-700 pt-4">
             <label className="block text-sm text-ink-400 mb-2">Tipo de evento</label>

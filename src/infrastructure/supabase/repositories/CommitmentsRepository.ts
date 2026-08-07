@@ -1,6 +1,6 @@
 import { supabase } from "../client";
-import { toCommitment } from "../mappers";
-import type { Commitment } from "../../../domain/entities/types";
+import { toCommitment, toPendingRegistration } from "../mappers";
+import type { Commitment, PendingRegistration } from "../../../domain/entities/types";
 
 export interface CheckinResult {
   commitment: Commitment;
@@ -23,12 +23,16 @@ export const CommitmentsRepository = {
     return (data ?? []).map(toCommitment);
   },
 
+  /** Inclui 'pendente' (quem ainda não foi aprovado) — quem consome
+   * esta lista filtra pelo status específico que importa em cada
+   * contexto (ver `TicketHeroAttendance`/`ParticipantsModal`). */
   async listForEvent(eventId: string): Promise<Commitment[]> {
     const { data, error } = await supabase
       .from("commitments")
       .select("*")
       .eq("event_id", eventId)
-      .neq("status", "cancelado");
+      .neq("status", "cancelado")
+      .neq("status", "rejeitado");
     if (error) throw new Error(error.message);
     return (data ?? []).map(toCommitment);
   },
@@ -53,7 +57,8 @@ export const CommitmentsRepository = {
       .select("*")
       .in("event_id", eventIds)
       .in("user_id", userIds)
-      .neq("status", "cancelado");
+      .neq("status", "cancelado")
+      .neq("status", "rejeitado");
     if (error) throw new Error(error.message);
     return (data ?? []).map(toCommitment);
   },
@@ -103,6 +108,29 @@ export const CommitmentsRepository = {
   /** Autoconfirmação (evento tipo "pago") de que a pessoa já usou o link de pagamento. */
   async confirmPayment(eventId: string): Promise<void> {
     const { error } = await supabase.rpc("confirm_payment", { p_event_id: eventId });
+    if (error) throw new Error(error.message);
+  },
+
+  /** Inscrições pendentes de um evento, com nome + e-mail — só o
+   * organizador do evento consegue chamar (ver migração 0038). */
+  async listPending(eventId: string): Promise<PendingRegistration[]> {
+    const { data, error } = await supabase.rpc("list_pending_registrations", {
+      p_event_id: eventId,
+    });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toPendingRegistration);
+  },
+
+  async approve(commitmentId: string): Promise<Commitment> {
+    const { data, error } = await supabase.rpc("approve_commitment", {
+      p_commitment_id: commitmentId,
+    });
+    if (error) throw new Error(error.message);
+    return toCommitment(data);
+  },
+
+  async reject(commitmentId: string): Promise<void> {
+    const { error } = await supabase.rpc("reject_commitment", { p_commitment_id: commitmentId });
     if (error) throw new Error(error.message);
   },
 };

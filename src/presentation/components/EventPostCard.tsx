@@ -29,6 +29,7 @@ export function EventPostCard({
   event,
   participantIds,
   isCommitted,
+  isPendingApproval = false,
   isOwnEvent,
   likerIds,
   photos,
@@ -40,6 +41,9 @@ export function EventPostCard({
   event: EventProposal;
   participantIds: string[];
   isCommitted: boolean;
+  /** Evento com `exigeAprovacao`: inscrição enviada, aguardando o
+   * organizador aprovar — ainda não é "Participando". */
+  isPendingApproval?: boolean;
   isOwnEvent: boolean;
   likerIds: string[];
   /** Fotos públicas do evento (organizador liberou `fotosPublicas`) —
@@ -50,6 +54,8 @@ export function EventPostCard({
   myCommitmentId?: string;
   onQuickCommit: () => Promise<boolean>;
   onQuickCancel: () => void;
+  /** Ação de participar/cancelar em andamento pra este card específico
+   * (loading do clique, não confundir com `isPendingApproval`). */
   isPending: boolean;
 }) {
   const navigate = useNavigate();
@@ -281,23 +287,33 @@ export function EventPostCard({
 
         <button
           onClick={async () => {
-            if (isCommitted) {
+            if (isCommitted || isPendingApproval) {
               onQuickCancel();
             } else {
               const ok = await onQuickCommit();
               if (ok) celebrate();
             }
           }}
-          disabled={isPending || isOwnEvent || (!isCommitted && quorum.vagasEsgotadas)}
+          disabled={
+            isPending || isOwnEvent || (!isCommitted && !isPendingApproval && quorum.vagasEsgotadas)
+          }
           className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
             isOwnEvent
               ? "bg-ink-800 text-ink-500 cursor-default"
               : isCommitted
               ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
+              : isPendingApproval
+              ? "bg-amber-500/15 border border-amber-500/50 text-amber-500"
               : "bg-coral-500 text-ink-950 disabled:opacity-50"
           }`}
         >
-          {isOwnEvent ? "Seu evento" : isCommitted ? "Participando ✓" : "Participar"}
+          {isOwnEvent
+            ? "Seu evento"
+            : isCommitted
+            ? "Participando ✓"
+            : isPendingApproval
+            ? "Aguardando aprovação ⏳"
+            : "Participar"}
         </button>
       </div>
 

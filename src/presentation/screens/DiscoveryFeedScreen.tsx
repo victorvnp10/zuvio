@@ -10,7 +10,7 @@ import { EventPostCard } from "../components/EventPostCard";
 import { categoryGradientStyle } from "../components/CategoryBadge";
 import { useCategories } from "../../application/hooks/useCategories";
 import { BottomNav } from "../layout/BottomNav";
-import type { EventCategory } from "../../domain/entities/types";
+import type { Commitment, EventCategory } from "../../domain/entities/types";
 
 export function DiscoveryFeedScreen() {
   const { user } = useAuth();
@@ -70,9 +70,9 @@ export function DiscoveryFeedScreen() {
   }, [allLikes]);
 
   const myCommitmentByEvent = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, { id: string; status: Commitment["status"] }>();
     for (const c of myCommitments ?? []) {
-      if (c.status !== "cancelado") map.set(c.eventId, c.id);
+      if (c.status !== "cancelado") map.set(c.eventId, { id: c.id, status: c.status });
     }
     return map;
   }, [myCommitments]);
@@ -143,12 +143,16 @@ export function DiscoveryFeedScreen() {
             likerIds={likesByEvent.get(event.id) ?? []}
             photos={photosByEvent?.[event.id] ?? []}
             currentUserId={user!.id}
-            isCommitted={myCommitmentByEvent.has(event.id)}
+            isCommitted={
+              myCommitmentByEvent.get(event.id)?.status === "confirmado" ||
+              myCommitmentByEvent.get(event.id)?.status === "check-in"
+            }
+            isPendingApproval={myCommitmentByEvent.get(event.id)?.status === "pendente"}
             isOwnEvent={event.criadorId === user?.id}
-            myCommitmentId={myCommitmentByEvent.get(event.id)}
+            myCommitmentId={myCommitmentByEvent.get(event.id)?.id}
             isPending={pendingEventId === event.id}
             onQuickCommit={() => commit(event.id)}
-            onQuickCancel={() => cancel(event.id, myCommitmentByEvent.get(event.id))}
+            onQuickCancel={() => cancel(event.id, myCommitmentByEvent.get(event.id)?.id)}
           />
         ))}
       </div>

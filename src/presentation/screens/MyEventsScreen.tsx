@@ -215,6 +215,19 @@ export function MyEventsScreen() {
             </div>
           </section>
 
+          {data && data.pending.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold text-ink-400 mb-2 uppercase tracking-wide">
+                Aguardando aprovação
+              </h2>
+              <div className="space-y-4">
+                {data.pending.map((event) => (
+                  <EventCard key={event.id} event={event} onOpen={() => navigate(`/eventos/${event.id}`)} />
+                ))}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="text-sm font-semibold text-ink-400 mb-2 uppercase tracking-wide">
               Confirmados

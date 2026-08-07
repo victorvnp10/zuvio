@@ -46,7 +46,14 @@ export type CommitmentStatus =
   | "confirmado"
   | "check-in"
   | "no-show"
-  | "cancelado";
+  | "cancelado"
+  /** Evento com `exigeAprovacao` — aguardando decisão do organizador,
+   * ainda não conta em vagas/quórum (ver migração 0038). */
+  | "pendente"
+  /** Organizador recusou a inscrição — nunca chegou a contar em
+   * vagas/quórum, e (diferente de "cancelado") não pesa na
+   * confiabilidade de quem se inscreveu. */
+  | "rejeitado";
 
 export type TrustBadge = "nenhum" | "bronze" | "prata" | "ouro";
 
@@ -133,6 +140,11 @@ export interface EventProposal {
    * organizador) vê; true = qualquer um vê, inclusive no carrossel
    * "reels" da capa no feed principal. */
   fotosPublicas: boolean;
+
+  /** Quando true, confirmar presença entra como "pendente" em vez de
+   * "confirmado" — só conta pra vagas/quórum depois que o organizador
+   * aprovar (ver migração 0038). */
+  exigeAprovacao: boolean;
 
   // tipoEvento === "pago"
   valorEntrada: number | null;
@@ -230,6 +242,18 @@ export interface Commitment {
   checkinEm: string | null;
   pagamentoConfirmado: boolean;
   googleCalendarEventId: string | null;
+}
+
+/** Uma inscrição pendente de aprovação, como o organizador a vê — só
+ * disponível via `list_pending_registrations()` (migração 0038), a
+ * única leitura do app que inclui e-mail. */
+export interface PendingRegistration {
+  commitmentId: string;
+  userId: string;
+  nome: string;
+  fotoUrl: string | null;
+  email: string;
+  criadoEm: string;
 }
 
 export interface ChatMessage {

@@ -30,6 +30,7 @@ import { getCountdownLabel, isUrgent } from "../../domain/valueObjects/EventTimi
 import { ChatPanel } from "../components/ChatPanel";
 import { AnnouncementsSection } from "../components/AnnouncementsSection";
 import { ParticipantsModal } from "../components/ParticipantsModal";
+import { PendingRegistrationsSection } from "../components/PendingRegistrationsSection";
 import {
   ConfirmedStack,
   TicketCodeRow,
@@ -92,14 +93,20 @@ export function EventDetailScreen() {
   const isCancelled = event.status === "cancelado";
   const isConcluded = event.status === "concluido";
   const chatUnlocked = isChatUnlocked(event.status) && !isCancelled;
-  const isCommitted = myCommitment && myCommitment.status !== "cancelado";
+  // 'pendente' e 'rejeitado' NÃO contam como "participando" — só
+  // confirmado/check-in ocuparam uma vaga de verdade (ver migração
+  // 0038). Distintos de propósito: o botão de ação e o "você
+  // confirmou" do ingresso precisam de cada um separadamente.
+  const isCommitted = myCommitment?.status === "confirmado" || myCommitment?.status === "check-in";
+  const isPendingApproval = myCommitment?.status === "pendente";
+  const isRejected = myCommitment?.status === "rejeitado";
   const canCheckin = myCommitment?.status === "confirmado";
   const alreadyCheckedIn = myCommitment?.status === "check-in";
   const categoria = findCategory(categories, event.categoria);
   const shareUrl = window.location.href;
   const stamp = ticketStampFor(quorum);
   const participantIds = commitments
-    .filter((c) => c.status !== "cancelado")
+    .filter((c) => c.status === "confirmado" || c.status === "check-in")
     .map((c) => c.userId);
   const confirmedLabel =
     isCommitted || isCreator
@@ -267,22 +274,32 @@ export function EventDetailScreen() {
 
           {!isCancelled && !isCreator && (
             <button
-              onClick={isCommitted ? handleCancel : handleCommitClick}
-              disabled={isActing || (!isCommitted && quorum.vagasEsgotadas)}
+              onClick={isCommitted || isPendingApproval ? handleCancel : handleCommitClick}
+              disabled={isActing || (!isCommitted && !isPendingApproval && quorum.vagasEsgotadas)}
               className={`ml-auto text-[13px] font-bold py-2 px-[18px] rounded-full transition-colors ${
                 isCommitted
                   ? "bg-quorum-500/15 border border-quorum-500/50 text-quorum-500"
+                  : isPendingApproval
+                  ? "bg-amber-500/15 border border-amber-500/50 text-amber-500"
                   : "bg-coral-500 text-ink-950 disabled:opacity-50"
               }`}
             >
               {isCommitted
                 ? "Participando ✓"
+                : isPendingApproval
+                ? "Aguardando aprovação ⏳"
                 : quorum.vagasEsgotadas
                 ? "Vagas esgotadas"
                 : "Participar"}
             </button>
           )}
         </div>
+
+        {isRejected && (
+          <p className="text-sm text-ink-400 px-4">
+            Sua inscrição anterior não foi aprovada — você pode tentar de novo.
+          </p>
+        )}
 
         {like.likeCount > 0 && (
           <p className="text-sm font-semibold text-ink-200 px-4 -mt-1">
@@ -291,6 +308,12 @@ export function EventDetailScreen() {
         )}
 
         {actionError && <p className="text-sm text-red-400 px-4">{actionError}</p>}
+
+        {isCreator && event.exigeAprovacao && eventId && (
+          <div className="mx-4">
+            <PendingRegistrationsSection eventId={eventId} />
+          </div>
+        )}
 
         {isCommitted && !alreadyCheckedIn && canCheckin && (
           <div className="px-4">

@@ -31,6 +31,9 @@ export interface CreateEventInput {
   valorTotalRateio?: number | null;
   /** Decisão do organizador — default false (só participantes veem). */
   fotosPublicas?: boolean;
+  /** Default false — quando true, confirmar presença entra como
+   * "pendente" até o organizador aprovar (ver migração 0038). */
+  exigeAprovacao?: boolean;
 }
 
 export interface UpdateEventInput {
@@ -53,6 +56,7 @@ export interface UpdateEventInput {
   valorPorPessoa?: number | null;
   valorTotalRateio?: number | null;
   fotosPublicas?: boolean;
+  exigeAprovacao?: boolean;
 }
 
 export const EventsRepository = {
@@ -116,6 +120,7 @@ export const EventsRepository = {
         valor_por_pessoa: input.valorPorPessoa ?? null,
         valor_total_rateio: input.valorTotalRateio ?? null,
         fotos_publicas: input.fotosPublicas ?? false,
+        exige_aprovacao: input.exigeAprovacao ?? false,
       })
       .select("*")
       .single();
@@ -154,6 +159,7 @@ export const EventsRepository = {
     if (changes.valorPorPessoa !== undefined) patch.valor_por_pessoa = changes.valorPorPessoa;
     if (changes.valorTotalRateio !== undefined) patch.valor_total_rateio = changes.valorTotalRateio;
     if (changes.fotosPublicas !== undefined) patch.fotos_publicas = changes.fotosPublicas;
+    if (changes.exigeAprovacao !== undefined) patch.exige_aprovacao = changes.exigeAprovacao;
     if (changes.geo !== undefined) {
       patch.geo_lat = changes.geo?.lat ?? null;
       patch.geo_lng = changes.geo?.lng ?? null;
