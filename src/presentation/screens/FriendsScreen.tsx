@@ -79,6 +79,7 @@ export function FriendsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<RankedProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [suggestions, setSuggestions] = useState<RankedProfile[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
   const [newGroupName, setNewGroupName] = useState("");
@@ -88,6 +89,7 @@ export function FriendsScreen() {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
+    setHasSearched(true);
     try {
       const results = await FriendsRepository.searchProfilesRanked(searchQuery);
       setSearchResults(results);
@@ -137,7 +139,10 @@ export function FriendsScreen() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                if (!e.target.value.trim()) setSearchResults([]);
+                if (!e.target.value.trim()) {
+                  setSearchResults([]);
+                  setHasSearched(false);
+                }
               }}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder="Buscar por nome ou e-mail..."
@@ -151,6 +156,12 @@ export function FriendsScreen() {
               <Search size={18} />
             </button>
           </div>
+
+          {hasSearched && !isSearching && searchResults.length === 0 && (
+            <p className="text-sm text-ink-500 text-center py-2">
+              Nenhum resultado para "{searchQuery.trim()}".
+            </p>
+          )}
 
           {searchResults.length > 0 && (
             <div className="space-y-2">
