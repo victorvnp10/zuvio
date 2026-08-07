@@ -184,7 +184,7 @@ export function EventDetailScreen() {
             {celebrating && <Confetti />}
             {presenceCelebrating && <PresenceCelebration />}
             <div
-              className="relative w-full flex flex-col items-center gap-3.5 px-8 pt-16 pb-5 text-center"
+              className="relative w-full aspect-[4/5] overflow-hidden flex flex-col items-center justify-center gap-3.5 px-8 py-8 text-center"
               style={
                 event.capaUrl
                   ? { backgroundImage: `url(${event.capaUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -199,7 +199,7 @@ export function EventDetailScreen() {
                   <span className="category-icon-float">{categoria.emoji}</span>
                 </span>
               )}
-              <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm">
+              <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm line-clamp-2">
                 {event.titulo}
               </h2>
 

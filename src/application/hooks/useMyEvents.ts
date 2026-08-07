@@ -42,8 +42,13 @@ export function useMyEvents() {
       if (error) throw new Error(error.message);
 
       const eventsById = new Map((data ?? []).map((row) => [row.id, toEventProposal(row)]));
+      // Mesma ordem de `listMine` (ascendente por data) — o `.in(...)`
+      // acima não garante ordem nenhuma, então precisa ordenar aqui.
       const resolve = (ids: string[]): EventProposal[] =>
-        ids.map((id) => eventsById.get(id)).filter((e): e is EventProposal => Boolean(e));
+        ids
+          .map((id) => eventsById.get(id))
+          .filter((e): e is EventProposal => Boolean(e))
+          .sort((a, b) => a.dataHora.localeCompare(b.dataHora));
 
       return {
         created,

@@ -11,7 +11,8 @@ export interface HistoryEntry {
 }
 
 /** Histórico de comparecimento: compromissos já resolvidos (check-in,
- * no-show, cancelado), mais recente primeiro — mesmo padrão de
+ * no-show, cancelado), ordenado pela DATA DO EVENTO (mais recente
+ * primeiro) — não por quando o commitment foi tocado. Mesmo padrão de
  * `useMyEvents` (duas queries, junta no cliente). */
 export function useHistory() {
   const { user } = useAuth();
@@ -33,7 +34,8 @@ export function useHistory() {
           const event = events.find((e) => e.id === commitment.eventId);
           return event ? { commitment, event } : null;
         })
-        .filter((entry): entry is HistoryEntry => entry !== null);
+        .filter((entry): entry is HistoryEntry => entry !== null)
+        .sort((a, b) => b.event.dataHora.localeCompare(a.event.dataHora));
     },
   });
 }

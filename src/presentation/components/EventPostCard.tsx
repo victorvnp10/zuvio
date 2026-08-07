@@ -156,7 +156,7 @@ export function EventPostCard({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="relative w-full flex flex-col items-center gap-3.5 px-6 pt-16 pb-5 text-center"
+            className="relative w-full aspect-[4/5] overflow-hidden flex flex-col items-center justify-center gap-3.5 px-6 py-8 text-center"
             style={
               currentPhoto
                 ? { backgroundImage: `url(${currentPhoto.fotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -173,7 +173,7 @@ export function EventPostCard({
                 <span className="category-icon-float">{categoria.emoji}</span>
               </span>
             )}
-            <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm">
+            <h2 className="relative z-10 font-display font-bold text-2xl leading-tight tracking-tight text-white drop-shadow-sm line-clamp-2">
               {event.titulo}
             </h2>
 
