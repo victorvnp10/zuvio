@@ -64,6 +64,7 @@ export function EventDetailScreen() {
   const {
     event,
     isLoading,
+    isFetched,
     quorum,
     myCommitment,
     commitments,
@@ -83,7 +84,45 @@ export function EventDetailScreen() {
   const { data: organizador } = usePublicProfile(event?.criadorId);
   const { data: categories } = useCategories();
 
-  if (isLoading || !event || !quorum || !user) {
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-ink-900 flex items-center justify-center text-ink-400">
+        Carregando...
+      </div>
+    );
+  }
+
+  // A busca terminou (`isFetched`) mas não veio evento — não é "ainda
+  // carregando", é a RLS filtrando de propósito: o evento existe, mas
+  // é modalidade Amigos/Restrita e esta pessoa não tem acesso (não é
+  // amiga do organizador, ou não resgatou um convite). Sem esta
+  // checagem, a tela ficava presa em "Carregando..." pra sempre —
+  // exatamente o caso de alguém abrindo um link direto compartilhado
+  // sem ter esse acesso.
+  if (isFetched && !event) {
+    return (
+      <div className="min-h-screen bg-ink-900 flex items-center justify-center p-6 text-center">
+        <div className="space-y-3 max-w-sm">
+          <p className="text-ink-200 font-medium">
+            Você não tem acesso a este evento.
+          </p>
+          <p className="text-sm text-ink-500">
+            Ele pode ser restrito a amigos do organizador, ou exigir um convite
+            específico. Peça pra quem te mandou o link te adicionar como amigo,
+            ou compartilhar o link de convite correto.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="text-coral-500 font-semibold text-sm"
+          >
+            Ir para o início
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event || !quorum) {
     return (
       <div className="min-h-screen bg-ink-900 flex items-center justify-center text-ink-400">
         Carregando...

@@ -160,6 +160,7 @@ export function useEventDetail(eventId: string | undefined) {
   return {
     event: eventQuery.data ?? null,
     isLoading: eventQuery.isLoading,
+    isFetched: eventQuery.isFetched,
     quorum,
     myCommitment,
     commitments: commitmentsQuery.data ?? [],

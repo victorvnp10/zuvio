@@ -516,3 +516,21 @@ Correção: `vercel.json` na raiz do projeto, redirecionando qualquer
 rota pro `index.html` — arquivos estáticos reais (JS, CSS, ícones,
 manifest, service worker) continuam sendo servidos normalmente, a
 Vercel só cai no rewrite quando não existe arquivo com aquele nome.
+
+## Correção: tela travava em "Carregando..." quando o link não dava acesso
+
+Consequência direta da correção de compartilhamento: se o evento
+compartilhado for modalidade Amigos/Restrita e a pessoa recém-
+cadastrada não é amiga do organizador (nem resgatou convite), a RLS
+filtra a linha de propósito — `EventsRepository.getById()` recebe zero
+linhas e devolve `null` (comportamento correto). O problema era só na
+tela: `useEventDetail` não distinguia "ainda buscando" de "buscou e não
+achou nada", então a checagem `!event` mantinha a tela em
+"Carregando..." pra sempre, mesmo com a busca já terminada — parecia
+o app ter travado.
+
+Correção: o hook agora expõe `isFetched` (do React Query), e
+`EventDetailScreen` usa isso pra mostrar uma mensagem clara de "Você
+não tem acesso a este evento" em vez de ficar preso no carregando.
+Não muda nenhuma regra de acesso — só torna visível o que já estava
+acontecendo (a RLS bloqueando corretamente).
