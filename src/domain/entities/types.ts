@@ -7,21 +7,13 @@
  * converter entre o formato bruto do Postgres e estes tipos.
  */
 
-/** Id (slug) de uma categoria — deixou de ser um conjunto fixo desde
- * que o painel admin passou a gerenciar categorias (ver `Category`). */
-export type EventCategory = string;
-
-/** Categoria de evento, administrável pelo gestor da plataforma. */
-export interface Category {
-  id: string;
-  nome: string;
-  emoji: string;
-  /** Hex — usado tanto no pontinho quanto no gradiente da capa. */
-  cor: string;
-  ordem: number;
-  ativo: boolean;
-  criadoEm: string;
-}
+export type EventCategory =
+  | "esporte"
+  | "viagem"
+  | "hobby"
+  | "encontro"
+  | "estudo"
+  | "outro";
 
 export type EventModality = "estranhos" | "amigos" | "hibrida" | "restrita";
 
@@ -46,14 +38,7 @@ export type CommitmentStatus =
   | "confirmado"
   | "check-in"
   | "no-show"
-  | "cancelado"
-  /** Evento com `exigeAprovacao` — aguardando decisão do organizador,
-   * ainda não conta em vagas/quórum (ver migração 0038). */
-  | "pendente"
-  /** Organizador recusou a inscrição — nunca chegou a contar em
-   * vagas/quórum, e (diferente de "cancelado") não pesa na
-   * confiabilidade de quem se inscreveu. */
-  | "rejeitado";
+  | "cancelado";
 
 export type TrustBadge = "nenhum" | "bronze" | "prata" | "ouro";
 
@@ -66,53 +51,16 @@ export interface Profile {
   id: string;
   nome: string;
   fotoUrl: string | null;
-  /** Nunca exibida publicamente — só para verificação de idade mínima e segmentação.
-   * `null` = perfil incompleto (comum logo após login com Google) — a
-   * aplicação deve levar a pessoa para completar antes de liberar o
-   * resto do app. */
-  dataNascimento: string | null;
+  /** Nunca exibida publicamente — só para verificação de idade mínima e segmentação. */
+  dataNascimento: string;
   /** Campo opcional — nunca usado para restringir acesso, só segmentação. */
   genero: string | null;
-  localizacaoBase: string | null;
+  localizacaoBase: string;
   categoriasInteresse: EventCategory[];
   scoreConfiabilidade: number;
   selo: TrustBadge;
-  /** Só vem preenchido de verdade a partir de `getOwn()` (o próprio
-   * usuário) — `public_profiles` não expõe esse campo. */
-  isAdmin: boolean;
-  /** Pontos de reputação (gamificação): +10 por check-in, -15 por
-   * no-show, -5 por cancelamento, piso em zero. Complementa
-   * `scoreConfiabilidade`/`selo` com um número que sobe e desce de
-   * forma visível a cada compromisso resolvido. */
-  pontosReputacao: number;
   criadoEm: string;
 }
-
-/** Resultado de busca/sugestão de amizade — o perfil + quantos amigos em comum. */
-export interface RankedProfile extends Profile {
-  amigosEmComum: number;
-}
-
-
-/** Troféu do catálogo — o mesmo pra todo mundo, conquistado ou não. */
-export interface Trophy {
-  id: string;
-  nome: string;
-  descricao: string;
-  emoji: string;
-  criterioTipo: "checkins" | "pontos" | "selo_ouro";
-  criterioValor: number | null;
-  ordem: number;
-}
-
-/** Um troféu já conquistado por um perfil específico. */
-export interface EarnedTrophy extends Trophy {
-  conquistadoEm: string;
-}
-
-export type TipoEvento = "livre" | "pago" | "colaborativo" | "conferencia";
-export type ModoListaColaborativa = "predefinida" | "livre" | "mista";
-export type ModoCustoColaborativo = "nenhum" | "valor_fixo_por_pessoa" | "rateio_entre_presentes";
 
 export interface EventProposal {
   id: string;
@@ -121,9 +69,6 @@ export interface EventProposal {
   titulo: string;
   descricao: string;
   dataHora: string;
-  /** Só preenchida quando `tipoEvento === "conferencia"` — a data/hora
-   * de início de um evento comum já é suficiente pra durar um dia só. */
-  dataHoraFim: string | null;
   local: {
     endereco: string;
     geo: GeoPoint | null;
@@ -135,112 +80,6 @@ export interface EventProposal {
   quorumMinimo: number;
   status: EventStatus;
   criadoEm: string;
-
-  tipoEvento: TipoEvento;
-
-  /** null = usa o gradiente da categoria como capa (ver `categoryGradientStyle`). */
-  capaUrl: string | null;
-
-  /** Decisão do ORGANIZADOR (não de quem posta) — vale pra todas as
-   * fotos do evento de uma vez: false = só quem participa (ou o
-   * organizador) vê; true = qualquer um vê, inclusive no carrossel
-   * "reels" da capa no feed principal. */
-  fotosPublicas: boolean;
-
-  /** Quando true, confirmar presença entra como "pendente" em vez de
-   * "confirmado" — só conta pra vagas/quórum depois que o organizador
-   * aprovar (ver migração 0038). */
-  exigeAprovacao: boolean;
-
-  /** Percentual mínimo de presença pra elegibilidade de certificado —
-   * `null` = organizador ainda não configurou (ver migração 0042). */
-  certificadoPresencaMinima: number | null;
-
-  // tipoEvento === "pago"
-  valorEntrada: number | null;
-  linkPagamento: string | null;
-
-  // tipoEvento === "colaborativo"
-  modoListaColaborativa: ModoListaColaborativa | null;
-  modoCustoColaborativo: ModoCustoColaborativo | null;
-  valorPorPessoa: number | null;
-  valorTotalRateio: number | null;
-}
-
-/** Uma atividade da programação de uma conferência (tipoEvento ===
- * "conferencia") — título, descrição, local e capa próprios, como se
- * fosse um evento isolado dentro do evento maior. */
-export interface ConferenceActivity {
-  id: string;
-  eventId: string;
-  titulo: string;
-  descricao: string;
-  local: string;
-  geo: GeoPoint | null;
-  capaUrl: string | null;
-  dataHoraInicio: string;
-  dataHoraFim: string;
-  ordem: number;
-  criadoEm: string;
-}
-
-/** Check-in de um participante numa atividade específica de uma
- * conferência — independente do commitment do evento como um todo. */
-export interface ActivityCheckin {
-  id: string;
-  activityId: string;
-  userId: string;
-  checkinEm: string;
-}
-
-/** Avaliação (1 a 5 estrelas) de uma atividade específica — feedback
- * sobre a qualidade da sessão em si, não sobre outro participante
- * (isso já existe em `Rating`, conceito diferente). */
-export interface ActivityRating {
-  id: string;
-  activityId: string;
-  userId: string;
-  nota: number;
-  comentario: string | null;
-  criadoEm: string;
-}
-
-/** Agregado público de `get_activity_rating_summary()` — nunca expõe
- * nota/comentário individual de outra pessoa. */
-export interface ActivityRatingSummary {
-  media: number | null;
-  total: number;
-}
-
-/** Item da lista colaborativa ("o que levar"). */
-export interface CollaborativeItem {
-  id: string;
-  eventId: string;
-  nome: string;
-  criadoPor: string;
-  /** null = ninguém marcou ainda que vai levar este item. */
-  reservadoPor: string | null;
-  criadoEm: string;
-}
-
-export type FotoVisibilidade = "evento" | "publica";
-
-/** Foto postada por um participante (ou organizador) de um evento. */
-export interface EventPhoto {
-  id: string;
-  eventId: string;
-  autorId: string;
-  fotoUrl: string;
-  visibilidade: FotoVisibilidade;
-  criadoEm: string;
-}
-
-export interface PhotoComment {
-  id: string;
-  photoId: string;
-  autorId: string;
-  texto: string;
-  criadoEm: string;
 }
 
 export interface Commitment {
@@ -250,58 +89,9 @@ export interface Commitment {
   status: CommitmentStatus;
   confirmadoEm: string;
   checkinEm: string | null;
-  pagamentoConfirmado: boolean;
-  googleCalendarEventId: string | null;
-}
-
-/** Uma inscrição pendente de aprovação, como o organizador a vê — só
- * disponível via `list_pending_registrations()` (migração 0038), a
- * única leitura do app que inclui e-mail. */
-export interface PendingRegistration {
-  commitmentId: string;
-  userId: string;
-  nome: string;
-  fotoUrl: string | null;
-  email: string;
-  criadoEm: string;
-}
-
-/** Um participante do evento, como o organizador o vê no painel de
- * administração — qualquer status, com e-mail (`list_event_participants`,
- * migração 0041). */
-export interface EventParticipantAdmin {
-  commitmentId: string;
-  userId: string;
-  nome: string;
-  fotoUrl: string | null;
-  email: string;
-  status: CommitmentStatus;
-  confirmadoEm: string;
-  checkinEm: string | null;
-}
-
-/** Elegibilidade de certificado de um participante
- * (`get_certificate_eligibility`, migração 0042) — percentual de
- * presença e se bate o mínimo configurado pelo organizador. */
-export interface CertificateEligibility {
-  userId: string;
-  nome: string;
-  percentual: number;
-  elegivel: boolean;
 }
 
 export interface ChatMessage {
-  id: string;
-  eventId: string;
-  autorId: string;
-  texto: string;
-  criadoEm: string;
-}
-
-/** Aviso do organizador — diferente do chat: não depende do quórum,
- * só quem organiza pode postar, lido por quem participa (ou pelo
- * próprio organizador). */
-export interface EventAnnouncement {
   id: string;
   eventId: string;
   autorId: string;
@@ -319,25 +109,6 @@ export interface Rating {
   criadoEm: string;
 }
 
-/** Avaliação do EVENTO como um todo (estrelas + opinião em texto),
- * diferente de `Rating` (participante avalia participante) — qualquer
- * tipo de evento, preenchida por quem fez check-in. */
-export interface EventRating {
-  id: string;
-  eventId: string;
-  userId: string;
-  nota: number; // 1-5
-  comentario: string | null;
-  criadoEm: string;
-}
-
-/** Agregado público de `get_event_rating_summary()` — nunca expõe
- * nota/comentário individual de outra pessoa. */
-export interface EventRatingSummary {
-  media: number | null;
-  total: number;
-}
-
 export interface Invite {
   id: string;
   eventId: string;
@@ -346,56 +117,4 @@ export interface Invite {
   uso: "unico" | "multiplo";
   expiraEm: string | null;
   usadoPor: string[];
-}
-
-export type FriendshipStatus = "pendente" | "aceito";
-
-export interface Friendship {
-  id: string;
-  requesterId: string;
-  addresseeId: string;
-  status: FriendshipStatus;
-  criadoEm: string;
-}
-
-/** Um agrupamento nomeado dentro dos amigos de alguém — "Melhores
- * Amigos" é criado automaticamente (isSystem) para todo usuário;
- * "Amigos da escola", "Amigos do trabalho" etc. são criados livremente. */
-export interface FriendGroup {
-  id: string;
-  ownerId: string;
-  nome: string;
-  isSystem: boolean;
-  criadoEm: string;
-}
-
-export type GroupMemberRole = "admin" | "membro";
-
-/** Grupo compartilhado estilo WhatsApp: várias pessoas pertencem ao
- * mesmo grupo (diferente de FriendGroup, que é um marcador pessoal na
- * lista de amigos de um único usuário). Quem cria vira admin; admin
- * adiciona/remove membros diretamente ou via link de convite. */
-export interface SharedGroup {
-  id: string;
-  criadorId: string;
-  nome: string;
-  descricao: string | null;
-  fotoUrl: string | null;
-  criadoEm: string;
-}
-
-export interface GroupMember {
-  groupId: string;
-  userId: string;
-  papel: GroupMemberRole;
-  entrouEm: string;
-}
-
-export interface GroupInvite {
-  id: string;
-  groupId: string;
-  criadoPor: string;
-  codigo: string;
-  ativo: boolean;
-  criadoEm: string;
 }

@@ -1,76 +1,32 @@
 import { NavLink } from "react-router-dom";
-import { Home, Users, Plus, Ticket } from "lucide-react";
-import { useAuth } from "../../application/context/AuthContext";
-import { Avatar } from "../components/Avatar";
+import { Compass, PlusCircle, MessageCircle, User } from "lucide-react";
 
-/**
- * Padrão visual do Instagram: 5 posições fixas, sem rótulo de texto
- * embaixo (só os ícones falam por si, é o padrão que o público já
- * conhece de cor) — "+" central numa caixa com contorno, e o último
- * ícone é a própria foto de perfil da pessoa, não um ícone genérico.
- */
+const ITEMS = [
+  { to: "/", icon: Compass, label: "Descobrir", end: true },
+  { to: "/meus-eventos", icon: MessageCircle, label: "Meus Eventos" },
+  { to: "/criar", icon: PlusCircle, label: "Criar" },
+  { to: "/perfil", icon: User, label: "Perfil" },
+];
+
 export function BottomNav() {
-  const { profile } = useAuth();
-
   return (
-    <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 h-14 bg-ink-900/95 backdrop-blur-md border-t border-ink-800 z-20">
-      <div className="flex justify-around items-center h-full max-w-lg mx-auto px-2">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `flex items-center justify-center w-full h-full transition-colors ${
-              isActive ? "text-ink-100" : "text-ink-500 hover:text-ink-200"
-            }`
-          }
-        >
-          {({ isActive }) => <Home size={26} strokeWidth={isActive ? 2.4 : 1.8} />}
-        </NavLink>
-
-        <NavLink
-          to="/amigos"
-          className={({ isActive }) =>
-            `flex items-center justify-center w-full h-full transition-colors ${
-              isActive ? "text-ink-100" : "text-ink-500 hover:text-ink-200"
-            }`
-          }
-        >
-          {({ isActive }) => <Users size={24} strokeWidth={isActive ? 2.4 : 1.8} />}
-        </NavLink>
-
-        <NavLink
-          to="/criar"
-          className="flex items-center justify-center w-full h-full"
-        >
-          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-coral-500 to-coral-600 flex items-center justify-center">
-            <Plus size={20} strokeWidth={2.6} className="text-ink-950" />
-          </span>
-        </NavLink>
-
-        <NavLink
-          to="/meus-eventos"
-          className={({ isActive }) =>
-            `flex items-center justify-center w-full h-full transition-colors ${
-              isActive ? "text-ink-100" : "text-ink-500 hover:text-ink-200"
-            }`
-          }
-        >
-          {({ isActive }) => <Ticket size={24} strokeWidth={isActive ? 2.4 : 1.8} />}
-        </NavLink>
-
-        <NavLink
-          to="/perfil"
-          className="flex items-center justify-center w-full h-full"
-        >
-          {({ isActive }) => (
-            <Avatar
-              fotoUrl={profile?.fotoUrl}
-              nome={profile?.nome}
-              size={26}
-              ring={isActive}
-            />
-          )}
-        </NavLink>
+    <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 h-16 bg-ink-900/90 backdrop-blur-md border-t border-ink-800 z-20">
+      <div className="flex justify-around items-center h-full max-w-lg mx-auto">
+        {ITEMS.map(({ to, icon: Icon, label, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors ${
+                isActive ? "text-coral-500" : "text-ink-400 hover:text-ink-200"
+              }`
+            }
+          >
+            <Icon size={22} strokeWidth={2.2} />
+            <span className="text-[11px] font-medium">{label}</span>
+          </NavLink>
+        ))}
       </div>
     </nav>
   );
