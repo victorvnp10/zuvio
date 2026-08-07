@@ -34,6 +34,28 @@ export interface PendingRegistrationRow {
   email: string;
   criado_em: string;
 }
+
+/** Linha de `list_event_participants()` (migração 0041) — roster
+ * completo (qualquer status), mesma restrição de acesso de
+ * `list_pending_registrations`. */
+export interface EventParticipantAdminRow {
+  commitment_id: string;
+  user_id: string;
+  nome: string;
+  foto_url: string | null;
+  email: string;
+  status: CommitmentStatusRow;
+  confirmado_em: string;
+  checkin_em: string | null;
+}
+
+/** Linha de `get_certificate_eligibility()` (migração 0042). */
+export interface CertificateEligibilityRow {
+  user_id: string;
+  nome: string;
+  percentual: number;
+  elegivel: boolean;
+}
 export type TrustBadgeRow = "nenhum" | "bronze" | "prata" | "ouro";
 
 /** Formato retornado por `checkin_event()` (ver migração 0030) — jsonb
@@ -126,6 +148,10 @@ export interface Database {
            * aprovar (`approve_commitment`) ou rejeitar
            * (`reject_commitment`). */
           exige_aprovacao: boolean;
+          /** Ver migração 0042 — percentual mínimo de presença pra
+           * elegibilidade de certificado; `null` = ainda não
+           * configurado (equivale a 100% em `get_certificate_eligibility`). */
+          certificado_presenca_minima: number | null;
         };
         Insert: Omit<
           Database["public"]["Tables"]["events"]["Row"],
@@ -555,6 +581,18 @@ export interface Database {
       get_event_rating_summary: {
         Args: { p_event_id: string };
         Returns: { media: number | null; total: number };
+      };
+      admin_checkin: {
+        Args: { p_event_id: string; p_user_id: string };
+        Returns: CheckinResultRow;
+      };
+      list_event_participants: {
+        Args: { p_event_id: string };
+        Returns: EventParticipantAdminRow[];
+      };
+      get_certificate_eligibility: {
+        Args: { p_event_id: string };
+        Returns: CertificateEligibilityRow[];
       };
       redeem_invite: {
         Args: { p_codigo: string };

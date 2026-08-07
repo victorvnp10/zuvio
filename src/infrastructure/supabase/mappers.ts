@@ -1,14 +1,21 @@
-import type { Database, PendingRegistrationRow } from "./database.types";
+import type {
+  CertificateEligibilityRow,
+  Database,
+  EventParticipantAdminRow,
+  PendingRegistrationRow,
+} from "./database.types";
 import type {
   ActivityCheckin,
   ActivityRating,
   Category,
+  CertificateEligibility,
   ChatMessage,
   CollaborativeItem,
   Commitment,
   ConferenceActivity,
   EarnedTrophy,
   EventAnnouncement,
+  EventParticipantAdmin,
   EventPhoto,
   EventProposal,
   EventRating,
@@ -117,6 +124,7 @@ export const toEventProposal = (row: EventRow): EventProposal => ({
   valorPorPessoa: row.valor_por_pessoa,
   valorTotalRateio: row.valor_total_rateio,
   exigeAprovacao: row.exige_aprovacao,
+  certificadoPresencaMinima: row.certificado_presenca_minima,
 });
 
 export const toConferenceActivity = (row: ConferenceActivityRow): ConferenceActivity => ({
@@ -176,6 +184,24 @@ export const toEventRating = (row: EventRatingRow): EventRating => ({
   nota: row.nota,
   comentario: row.comentario,
   criadoEm: row.criado_em,
+});
+
+export const toEventParticipantAdmin = (row: EventParticipantAdminRow): EventParticipantAdmin => ({
+  commitmentId: row.commitment_id,
+  userId: row.user_id,
+  nome: row.nome,
+  fotoUrl: row.foto_url,
+  email: row.email,
+  status: row.status,
+  confirmadoEm: row.confirmado_em,
+  checkinEm: row.checkin_em,
+});
+
+export const toCertificateEligibility = (row: CertificateEligibilityRow): CertificateEligibility => ({
+  userId: row.user_id,
+  nome: row.nome,
+  percentual: row.percentual,
+  elegivel: row.elegivel,
 });
 
 export const toChatMessage = (row: ChatMessageRow): ChatMessage => ({

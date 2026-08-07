@@ -146,6 +146,10 @@ export interface EventProposal {
    * aprovar (ver migração 0038). */
   exigeAprovacao: boolean;
 
+  /** Percentual mínimo de presença pra elegibilidade de certificado —
+   * `null` = organizador ainda não configurou (ver migração 0042). */
+  certificadoPresencaMinima: number | null;
+
   // tipoEvento === "pago"
   valorEntrada: number | null;
   linkPagamento: string | null;
@@ -254,6 +258,30 @@ export interface PendingRegistration {
   fotoUrl: string | null;
   email: string;
   criadoEm: string;
+}
+
+/** Um participante do evento, como o organizador o vê no painel de
+ * administração — qualquer status, com e-mail (`list_event_participants`,
+ * migração 0041). */
+export interface EventParticipantAdmin {
+  commitmentId: string;
+  userId: string;
+  nome: string;
+  fotoUrl: string | null;
+  email: string;
+  status: CommitmentStatus;
+  confirmadoEm: string;
+  checkinEm: string | null;
+}
+
+/** Elegibilidade de certificado de um participante
+ * (`get_certificate_eligibility`, migração 0042) — percentual de
+ * presença e se bate o mínimo configurado pelo organizador. */
+export interface CertificateEligibility {
+  userId: string;
+  nome: string;
+  percentual: number;
+  elegivel: boolean;
 }
 
 export interface ChatMessage {

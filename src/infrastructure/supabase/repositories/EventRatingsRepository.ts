@@ -36,4 +36,17 @@ export const EventRatingsRepository = {
     if (error) throw new Error(error.message);
     return { media: data.media, total: data.total };
   },
+
+  /** Todas as avaliações do evento — só o organizador enxerga via RLS
+   * (`event_ratings_select`, migração 0039); base da exportação do
+   * painel do administrador. */
+  async listForEvent(eventId: string): Promise<EventRating[]> {
+    const { data, error } = await supabase
+      .from("event_ratings")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("criado_em", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toEventRating);
+  },
 };

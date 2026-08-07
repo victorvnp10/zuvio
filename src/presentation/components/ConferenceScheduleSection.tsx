@@ -396,7 +396,7 @@ export function ConferenceScheduleSection({
         {isCreator && (
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate(`/eventos/${eventId}/conferencia-admin`)}
+              onClick={() => navigate(`/eventos/${eventId}/admin`)}
               className="flex items-center gap-1 text-xs font-semibold text-ink-300"
             >
               <BarChart3 size={14} /> Painel

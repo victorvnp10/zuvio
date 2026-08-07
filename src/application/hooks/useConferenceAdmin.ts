@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useConferenceActivities } from "./useConferenceActivities";
 import { ConferenceAdminRepository } from "../../infrastructure/supabase/repositories/ConferenceAdminRepository";
+import { buildCsv } from "../../shared/csv";
 
 export interface ActivityAdminSummary {
   activityId: string;
@@ -9,15 +10,6 @@ export interface ActivityAdminSummary {
   checkins: number;
   mediaAvaliacao: number | null;
   totalAvaliacoes: number;
-}
-
-/** CSV simples (vírgula, aspas duplas escapadas) — sem dependência
- * externa, é só texto. */
-function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export function useConferenceAdmin(eventId: string | undefined) {
@@ -84,10 +76,11 @@ export function useConferenceAdmin(eventId: string | undefined) {
       new Date(rating.criadoEm).toLocaleString("pt-BR"),
     ]);
 
-    return [header, ...rows].map((cols) => cols.map(escapeCsvField).join(",")).join("\n");
+    return buildCsv([header, ...rows]);
   };
 
   return {
+    activities: activities ?? [],
     summaries,
     isLoading: isLoadingActivities || checkinCountsQuery.isLoading || ratingsQuery.isLoading,
     buildRatingsCsv,

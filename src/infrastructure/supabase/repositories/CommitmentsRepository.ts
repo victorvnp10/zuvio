@@ -133,4 +133,20 @@ export const CommitmentsRepository = {
     const { error } = await supabase.rpc("reject_commitment", { p_commitment_id: commitmentId });
     if (error) throw new Error(error.message);
   },
+
+  /** Check-in feito pelo ORGANIZADOR em nome de quem esqueceu de fazer
+   * o próprio — sem geofence/janela de horário (ver migração 0040). */
+  async adminCheckin(eventId: string, userId: string): Promise<CheckinResult> {
+    const { data, error } = await supabase.rpc("admin_checkin", {
+      p_event_id: eventId,
+      p_user_id: userId,
+    });
+    if (error) throw new Error(error.message);
+    return {
+      commitment: toCommitment(data.commitment),
+      pontosGanhos: data.pontos_ganhos,
+      pontosTotais: data.pontos_totais,
+      trofeusNovos: data.trofeus_novos ?? [],
+    };
+  },
 };

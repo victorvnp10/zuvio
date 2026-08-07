@@ -57,6 +57,9 @@ export interface UpdateEventInput {
   valorTotalRateio?: number | null;
   fotosPublicas?: boolean;
   exigeAprovacao?: boolean;
+  /** Percentual mínimo de presença pra elegibilidade de certificado
+   * (0-100) — `null` para "ainda não configurado" (ver migração 0042). */
+  certificadoPresencaMinima?: number | null;
 }
 
 export const EventsRepository = {
@@ -160,6 +163,8 @@ export const EventsRepository = {
     if (changes.valorTotalRateio !== undefined) patch.valor_total_rateio = changes.valorTotalRateio;
     if (changes.fotosPublicas !== undefined) patch.fotos_publicas = changes.fotosPublicas;
     if (changes.exigeAprovacao !== undefined) patch.exige_aprovacao = changes.exigeAprovacao;
+    if (changes.certificadoPresencaMinima !== undefined)
+      patch.certificado_presenca_minima = changes.certificadoPresencaMinima;
     if (changes.geo !== undefined) {
       patch.geo_lat = changes.geo?.lat ?? null;
       patch.geo_lng = changes.geo?.lng ?? null;

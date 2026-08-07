@@ -1,6 +1,6 @@
 import { supabase } from "../client";
-import { toActivityRating, toProfile } from "../mappers";
-import type { ActivityRating, Profile } from "../../../domain/entities/types";
+import { toActivityCheckin, toActivityRating, toProfile } from "../mappers";
+import type { ActivityCheckin, ActivityRating, Profile } from "../../../domain/entities/types";
 
 export const ConferenceAdminRepository = {
   /** Quantos check-ins cada atividade recebeu — a mesma linha da RLS
@@ -34,6 +34,20 @@ export const ConferenceAdminRepository = {
       .order("criado_em", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map(toActivityRating);
+  },
+
+  /** Check-ins de cada atividade, linha a linha (não só a contagem) —
+   * base da exportação "lista completa de participantes por
+   * atividade". Mesma RLS de `getCheckinCounts`. */
+  async getCheckinRows(activityIds: string[]): Promise<ActivityCheckin[]> {
+    if (activityIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from("activity_checkins")
+      .select("*")
+      .in("activity_id", activityIds)
+      .order("checkin_em", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toActivityCheckin);
   },
 
   /** Nomes dos participantes que avaliaram — só pra rotular a

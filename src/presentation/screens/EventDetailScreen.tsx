@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   MapPin,
   CalendarDays,
+  LayoutDashboard,
   Pencil,
   Trash2,
   XCircle,
@@ -134,6 +135,15 @@ export function EventDetailScreen() {
           <ArrowLeft size={22} />
         </button>
         <h1 className="font-display font-semibold truncate flex-1">{event.titulo}</h1>
+        {isCreator && !isCancelled && (
+          <button
+            onClick={() => navigate(`/eventos/${event.id}/admin`)}
+            className="p-2 text-ink-300 hover:text-ink-100"
+            aria-label="Painel do organizador"
+          >
+            <LayoutDashboard size={18} />
+          </button>
+        )}
         {isCreator && !isCancelled && (
           <button
             onClick={() => navigate(`/eventos/${event.id}/editar`)}
