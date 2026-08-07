@@ -19,7 +19,7 @@ export function EventCostSection({
 }) {
   const [isConfirming, setIsConfirming] = useState(false);
 
-  if (event.tipoEvento === "pago") {
+  if (event.valorEntrada !== null) {
     const jaConfirmou = myCommitment?.pagamentoConfirmado;
 
     const handleConfirm = async () => {

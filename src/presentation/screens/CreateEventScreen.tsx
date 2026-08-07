@@ -77,11 +77,16 @@ export function CreateEventScreen() {
   const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
   const [valorEntrada, setValorEntrada] = useState<number>(0);
   const [linkPagamento, setLinkPagamento] = useState("");
+  // Conferência é gratuita por padrão — diferente de "Pago", onde ter
+  // preço é o próprio motivo do tipo existir.
+  const [conferenciaComEntrada, setConferenciaComEntrada] = useState(false);
   const [modoListaColaborativa, setModoListaColaborativa] = useState<ModoListaColaborativa>("predefinida");
   const [modoCustoColaborativo, setModoCustoColaborativo] = useState<ModoCustoColaborativo>("nenhum");
   const [valorPorPessoa, setValorPorPessoa] = useState<number>(0);
   const [valorTotalRateio, setValorTotalRateio] = useState<number>(0);
   const [fotosPublicas, setFotosPublicas] = useState(false);
+
+  const temEntradaPaga = tipoEvento === "pago" || (tipoEvento === "conferencia" && conferenciaComEntrada);
 
   const isLastStep = step === STEPS.length - 1;
 
@@ -104,8 +109,8 @@ export function CreateEventScreen() {
       vagasTotal,
       quorumMinimo,
       tipoEvento,
-      valorEntrada: tipoEvento === "pago" ? valorEntrada : null,
-      linkPagamento: tipoEvento === "pago" ? linkPagamento : null,
+      valorEntrada: temEntradaPaga ? valorEntrada : null,
+      linkPagamento: temEntradaPaga ? linkPagamento : null,
       modoListaColaborativa: tipoEvento === "colaborativo" ? modoListaColaborativa : null,
       modoCustoColaborativo: tipoEvento === "colaborativo" ? modoCustoColaborativo : null,
       valorPorPessoa:
@@ -137,6 +142,38 @@ export function CreateEventScreen() {
 
     if (event) navigate(`/eventos/${event.id}`);
   };
+
+  // Compartilhado entre o tipo "Pago" e uma conferência com entrada —
+  // mesmos dois campos, mesma explicação de que o app só guarda o link.
+  const renderCamposEntradaPaga = () => (
+    <>
+      <div>
+        <label className="block text-sm text-ink-400 mb-1">Valor da entrada (R$)</label>
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          value={valorEntrada}
+          onChange={(e) => setValorEntrada(Number(e.target.value))}
+          className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label className="block text-sm text-ink-400 mb-1">Link de pagamento</label>
+        <input
+          type="url"
+          value={linkPagamento}
+          onChange={(e) => setLinkPagamento(e.target.value)}
+          placeholder="https://..."
+          className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
+        />
+        <p className="text-xs text-ink-500 mt-1">
+          O app só guarda e mostra este link — não processa pagamento nenhum. Quem
+          confirmar presença paga por aqui e apresenta o comprovante na entrada.
+        </p>
+      </div>
+    </>
+  );
 
   return (
     <AppShell title="Criar proposta">
@@ -356,31 +393,7 @@ export function CreateEventScreen() {
 
           {tipoEvento === "pago" && (
             <div className="space-y-3 bg-ink-800/40 border border-ink-700 rounded-xl p-4">
-              <div>
-                <label className="block text-sm text-ink-400 mb-1">Valor da entrada (R$)</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={valorEntrada}
-                  onChange={(e) => setValorEntrada(Number(e.target.value))}
-                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-ink-400 mb-1">Link de pagamento</label>
-                <input
-                  type="url"
-                  value={linkPagamento}
-                  onChange={(e) => setLinkPagamento(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 placeholder:text-ink-500 focus:border-coral-500 focus:outline-none"
-                />
-                <p className="text-xs text-ink-500 mt-1">
-                  O app só guarda e mostra este link — não processa pagamento nenhum. Quem
-                  confirmar presença paga por aqui e apresenta o comprovante na entrada.
-                </p>
-              </div>
+              {renderCamposEntradaPaga()}
             </div>
           )}
 
@@ -400,6 +413,18 @@ export function CreateEventScreen() {
                   programação são cadastradas depois, na página do evento já criado.
                 </p>
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-ink-300">
+                <input
+                  type="checkbox"
+                  checked={conferenciaComEntrada}
+                  onChange={(e) => setConferenciaComEntrada(e.target.checked)}
+                  className="accent-coral-500"
+                />
+                Cobrar entrada nesta conferência
+              </label>
+
+              {conferenciaComEntrada && renderCamposEntradaPaga()}
             </div>
           )}
 

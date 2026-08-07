@@ -72,6 +72,9 @@ export function EditEventScreen() {
   const [dataHoraFimConferencia, setDataHoraFimConferencia] = useState("");
   const [valorEntrada, setValorEntrada] = useState(0);
   const [linkPagamento, setLinkPagamento] = useState("");
+  // Conferência é gratuita por padrão — diferente de "Pago", onde ter
+  // preço é o próprio motivo do tipo existir.
+  const [conferenciaComEntrada, setConferenciaComEntrada] = useState(false);
   const [modoListaColaborativa, setModoListaColaborativa] = useState<ModoListaColaborativa>("predefinida");
   const [modoCustoColaborativo, setModoCustoColaborativo] = useState<ModoCustoColaborativo>("nenhum");
   const [valorPorPessoa, setValorPorPessoa] = useState(0);
@@ -92,6 +95,7 @@ export function EditEventScreen() {
       setDataHoraFimConferencia(event.dataHoraFim ? toDatetimeLocalValue(event.dataHoraFim) : "");
       setValorEntrada(event.valorEntrada ?? 0);
       setLinkPagamento(event.linkPagamento ?? "");
+      setConferenciaComEntrada(event.tipoEvento === "conferencia" && event.valorEntrada !== null);
       setModoListaColaborativa(event.modoListaColaborativa ?? "predefinida");
       setModoCustoColaborativo(event.modoCustoColaborativo ?? "nenhum");
       setValorPorPessoa(event.valorPorPessoa ?? 0);
@@ -107,6 +111,8 @@ export function EditEventScreen() {
       </div>
     );
   }
+
+  const temEntradaPaga = tipoEvento === "pago" || (tipoEvento === "conferencia" && conferenciaComEntrada);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,8 +130,8 @@ export function EditEventScreen() {
     }
     const eventTypeError = validateEventType({
       tipoEvento,
-      valorEntrada,
-      linkPagamento,
+      valorEntrada: temEntradaPaga ? valorEntrada : null,
+      linkPagamento: temEntradaPaga ? linkPagamento : null,
       modoCustoColaborativo,
       valorPorPessoa,
       valorTotalRateio,
@@ -152,8 +158,8 @@ export function EditEventScreen() {
       vagasTotal,
       quorumMinimo,
       tipoEvento,
-      valorEntrada: tipoEvento === "pago" ? valorEntrada : null,
-      linkPagamento: tipoEvento === "pago" ? linkPagamento : null,
+      valorEntrada: temEntradaPaga ? valorEntrada : null,
+      linkPagamento: temEntradaPaga ? linkPagamento : null,
       modoListaColaborativa: tipoEvento === "colaborativo" ? modoListaColaborativa : null,
       modoCustoColaborativo: tipoEvento === "colaborativo" ? modoCustoColaborativo : null,
       valorPorPessoa:
@@ -168,6 +174,33 @@ export function EditEventScreen() {
     });
     if (updated) navigate(`/eventos/${event.id}`);
   };
+
+  // Compartilhado entre o tipo "Pago" e uma conferência com entrada —
+  // mesmos dois campos.
+  const renderCamposEntradaPaga = () => (
+    <>
+      <div>
+        <label className="block text-sm text-ink-400 mb-1">Valor da entrada (R$)</label>
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          value={valorEntrada}
+          onChange={(e) => setValorEntrada(Number(e.target.value))}
+          className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label className="block text-sm text-ink-400 mb-1">Link de pagamento</label>
+        <input
+          type="url"
+          value={linkPagamento}
+          onChange={(e) => setLinkPagamento(e.target.value)}
+          className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
+        />
+      </div>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-ink-900 text-ink-100 pb-10">
@@ -344,26 +377,7 @@ export function EditEventScreen() {
 
           {tipoEvento === "pago" && (
             <div className="space-y-3 bg-ink-800/40 border border-ink-700 rounded-xl p-4">
-              <div>
-                <label className="block text-sm text-ink-400 mb-1">Valor da entrada (R$)</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={valorEntrada}
-                  onChange={(e) => setValorEntrada(Number(e.target.value))}
-                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-ink-400 mb-1">Link de pagamento</label>
-                <input
-                  type="url"
-                  value={linkPagamento}
-                  onChange={(e) => setLinkPagamento(e.target.value)}
-                  className="w-full bg-ink-900 border border-ink-700 rounded-xl p-3 text-ink-100 focus:border-coral-500 focus:outline-none"
-                />
-              </div>
+              {renderCamposEntradaPaga()}
             </div>
           )}
 
@@ -382,6 +396,18 @@ export function EditEventScreen() {
                   A programação de atividades é gerenciada na página do evento.
                 </p>
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-ink-300">
+                <input
+                  type="checkbox"
+                  checked={conferenciaComEntrada}
+                  onChange={(e) => setConferenciaComEntrada(e.target.checked)}
+                  className="accent-coral-500"
+                />
+                Cobrar entrada nesta conferência
+              </label>
+
+              {conferenciaComEntrada && renderCamposEntradaPaga()}
             </div>
           )}
 

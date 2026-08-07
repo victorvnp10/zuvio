@@ -25,7 +25,15 @@ export interface EventTypeInput {
 }
 
 export const validateEventType = (input: EventTypeInput): string | null => {
-  if (input.tipoEvento === "pago") {
+  // Uma conferência é gratuita por padrão — só exige valor/link de
+  // pagamento quando `valorEntrada` já vier preenchido (o organizador
+  // marcou que esta conferência cobra entrada). Em "pago", isso é
+  // sempre obrigatório.
+  const exigePreco =
+    input.tipoEvento === "pago" ||
+    (input.tipoEvento === "conferencia" && input.valorEntrada !== null && input.valorEntrada !== undefined);
+
+  if (exigePreco) {
     if (!input.valorEntrada || input.valorEntrada <= 0) {
       return "Informe o valor da entrada.";
     }
