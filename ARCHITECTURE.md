@@ -500,3 +500,19 @@ precisa usar o link de convite (`/convite/:codigo`), disponível hoje
 só para o organizador (`InviteLinkSection`, na página do evento). Dar
 esse mesmo link para qualquer participante compartilhar (não só o
 organizador) é uma extensão natural, ainda não implementada.
+
+## Correção: 404 da própria Vercel em links diretos
+
+Abrir um link direto (`/eventos/:id`, `/convite/:codigo`, `/perfil`,
+etc.) sem passar antes pela tela inicial dava 404 — mas era um 404 da
+**Vercel**, não do React: sem um arquivo `vercel.json` com rewrite,
+ela procura um arquivo/pasta real nesse caminho, não acha, e devolve
+o erro dela mesma antes do `index.html` (e portanto o React Router)
+sequer carregar. Isso é diferente do que a migração de
+`shared/authRedirect.ts` resolve — aquela cuida de "pra onde ir depois
+de logar"; esta cuida de "o link nem carrega o app".
+
+Correção: `vercel.json` na raiz do projeto, redirecionando qualquer
+rota pro `index.html` — arquivos estáticos reais (JS, CSS, ícones,
+manifest, service worker) continuam sendo servidos normalmente, a
+Vercel só cai no rewrite quando não existe arquivo com aquele nome.
