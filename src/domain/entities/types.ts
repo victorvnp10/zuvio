@@ -285,6 +285,25 @@ export interface Rating {
   criadoEm: string;
 }
 
+/** Avaliação do EVENTO como um todo (estrelas + opinião em texto),
+ * diferente de `Rating` (participante avalia participante) — qualquer
+ * tipo de evento, preenchida por quem fez check-in. */
+export interface EventRating {
+  id: string;
+  eventId: string;
+  userId: string;
+  nota: number; // 1-5
+  comentario: string | null;
+  criadoEm: string;
+}
+
+/** Agregado público de `get_event_rating_summary()` — nunca expõe
+ * nota/comentário individual de outra pessoa. */
+export interface EventRatingSummary {
+  media: number | null;
+  total: number;
+}
+
 export interface Invite {
   id: string;
   eventId: string;

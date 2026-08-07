@@ -11,6 +11,7 @@ import type {
   EventAnnouncement,
   EventPhoto,
   EventProposal,
+  EventRating,
   Friendship,
   FriendGroup,
   PendingRegistration,
@@ -41,6 +42,7 @@ type TrophyRow = Database["public"]["Tables"]["trophies"]["Row"];
 type ConferenceActivityRow = Database["public"]["Tables"]["conference_activities"]["Row"];
 type ActivityCheckinRow = Database["public"]["Tables"]["activity_checkins"]["Row"];
 type ActivityRatingRow = Database["public"]["Tables"]["activity_ratings"]["Row"];
+type EventRatingRow = Database["public"]["Tables"]["event_ratings"]["Row"];
 
 export const toProfile = (row: ProfileRow | PublicProfileRow): Profile => ({
   id: row.id,
@@ -164,6 +166,15 @@ export const toPendingRegistration = (row: PendingRegistrationRow): PendingRegis
   nome: row.nome,
   fotoUrl: row.foto_url,
   email: row.email,
+  criadoEm: row.criado_em,
+});
+
+export const toEventRating = (row: EventRatingRow): EventRating => ({
+  id: row.id,
+  eventId: row.event_id,
+  userId: row.user_id,
+  nota: row.nota,
+  comentario: row.comentario,
   criadoEm: row.criado_em,
 });
 

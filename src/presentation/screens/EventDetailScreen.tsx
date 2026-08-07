@@ -44,6 +44,7 @@ import {
 } from "../components/TicketStub";
 import { ReportMenu } from "../components/ReportMenu";
 import { RatingSection } from "../components/RatingSection";
+import { EventRatingSection } from "../components/EventRatingSection";
 import { EventCostSection } from "../components/EventCostSection";
 import { CollaborativeListSection } from "../components/CollaborativeListSection";
 import { ConferenceScheduleSection } from "../components/ConferenceScheduleSection";
@@ -362,7 +363,10 @@ export function EventDetailScreen() {
 
         <div className="mx-4 space-y-4" id="comentarios">
           {isConcluded && alreadyCheckedIn && (
-            <RatingSection eventId={event.id} commitments={commitments} currentUserId={user.id} />
+            <>
+              <EventRatingSection eventId={event.id} />
+              <RatingSection eventId={event.id} commitments={commitments} currentUserId={user.id} />
+            </>
           )}
 
           {isCreator && event.modalidade === "restrita" && eventId && (

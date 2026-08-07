@@ -467,6 +467,23 @@ export interface Database {
         };
         Update: Partial<{ nota: number; comentario: string | null }>;
       };
+      event_ratings: {
+        Row: {
+          id: string;
+          event_id: string;
+          user_id: string;
+          nota: number;
+          comentario: string | null;
+          criado_em: string;
+        };
+        Insert: {
+          event_id: string;
+          user_id: string;
+          nota: number;
+          comentario?: string | null;
+        };
+        Update: Partial<{ nota: number; comentario: string | null }>;
+      };
       trophies: {
         Row: {
           id: string;
@@ -533,6 +550,10 @@ export interface Database {
       };
       get_activity_rating_summary: {
         Args: { p_activity_id: string };
+        Returns: { media: number | null; total: number };
+      };
+      get_event_rating_summary: {
+        Args: { p_event_id: string };
         Returns: { media: number | null; total: number };
       };
       redeem_invite: {
